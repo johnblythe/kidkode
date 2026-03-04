@@ -158,7 +158,7 @@ function QuestionCard({
               onClick={handleNext}
               className="px-6 py-2.5 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg shadow-[0_0_15px_rgba(251,191,36,0.3)] hover:shadow-[0_0_25px_rgba(251,191,36,0.5)] transition-shadow"
             >
-              Next Question \u2192
+              {"Next Question →"}
             </motion.button>
           </motion.div>
         )}
@@ -270,7 +270,7 @@ function ScoreScreen({
             onClick={onPass}
             className="px-8 py-3 bg-gradient-to-r from-hp-green-dim to-hp-green text-void font-bold rounded-lg text-lg shadow-[0_0_20px_rgba(34,197,94,0.3)] hover:shadow-[0_0_30px_rgba(34,197,94,0.5)] transition-shadow"
           >
-            Continue \u2192
+            {"Continue →"}
           </motion.button>
         ) : (
           <motion.button

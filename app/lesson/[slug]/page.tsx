@@ -10,6 +10,7 @@ import {
   completeLesson,
 } from "@/lib/progress";
 import type { Lesson, LessonSection } from "@/lib/types";
+import LessonTimer from "@/components/LessonTimer";
 import SlideViewer from "@/components/SlideViewer";
 import ReadingSectionComponent from "@/components/ReadingSection";
 import InteractiveExercise from "@/components/InteractiveExercise";
@@ -140,7 +141,7 @@ export default function LessonPlayerPage() {
             onClick={() => router.push("/")}
             className="flex items-center gap-1 text-sm text-slate-400 hover:text-gold transition-colors shrink-0"
           >
-            <span className="text-lg">\u2190</span>
+            <span className="text-lg">{"←"}</span>
             <span className="hidden sm:inline">Dashboard</span>
           </button>
 
@@ -148,6 +149,11 @@ export default function LessonPlayerPage() {
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-lg">{lesson.icon}</span>
             <h1 className="text-sm font-bold text-gold truncate">{lesson.title}</h1>
+          </div>
+
+          {/* Lesson timer */}
+          <div className="shrink-0 hidden sm:block">
+            <LessonTimer targetMinutes={lesson.estimatedMinutes} />
           </div>
 
           {/* Progress indicator */}

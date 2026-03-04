@@ -243,7 +243,7 @@ export default function ReadingSection({ section, onComplete }: ReadingSectionPr
         onClick={onComplete}
         className="mt-6 mx-auto px-8 py-3 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg text-lg shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] transition-shadow"
       >
-        I&apos;ve read this \u2192
+        {"I've read this →"}
       </motion.button>
     </motion.div>
   );
