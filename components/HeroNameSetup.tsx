@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getProfile, saveProfile } from "@/lib/progress";
+import { useAudio } from "@/lib/audio/AudioContext";
 
 const MAX_NAME_LENGTH = 20;
 
@@ -137,6 +138,7 @@ interface HeroNameSetupProps {
 }
 
 export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
+  const { sfx } = useAudio();
   const [name, setName] = useState("");
   const [selectedClass, setSelectedClass] = useState(0);
   const [phase, setPhase] = useState<"intro" | "input" | "flourish">("intro");
@@ -178,6 +180,8 @@ export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
 
   function handleSubmit() {
     if (!canSubmit) return;
+
+    sfx("level-up");
 
     // Save name to profile
     const profile = getProfile();

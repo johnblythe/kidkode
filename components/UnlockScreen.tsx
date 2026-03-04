@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useAudio } from "@/lib/audio/AudioContext";
 
 interface UnlockScreenProps {
   xpEarned: number;
@@ -57,6 +58,7 @@ function XPCounter({ target, duration = 2000 }: { target: number; duration?: num
 }
 
 export default function UnlockScreen({ xpEarned, newLevel, streak }: UnlockScreenProps) {
+  const { sfx, playBGM } = useAudio();
   const [showContent, setShowContent] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showButton, setShowButton] = useState(false);
@@ -72,6 +74,8 @@ export default function UnlockScreen({ xpEarned, newLevel, streak }: UnlockScree
   );
 
   useEffect(() => {
+    sfx("unlock-celebration");
+    playBGM("victory");
     const t1 = setTimeout(() => setShowContent(true), 300);
     const t2 = setTimeout(() => setShowStats(true), 1500);
     const t3 = setTimeout(() => setShowButton(true), 2800);
@@ -80,7 +84,7 @@ export default function UnlockScreen({ xpEarned, newLevel, streak }: UnlockScree
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-void">

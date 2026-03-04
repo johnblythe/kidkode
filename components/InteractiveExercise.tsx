@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { InteractiveSection, InteractiveStep } from "@/lib/types";
+import { useAudio } from "@/lib/audio/AudioContext";
 
 interface InteractiveExerciseProps {
   section: InteractiveSection;
@@ -24,6 +25,7 @@ function SequenceStep({
   step: InteractiveStep;
   onStepComplete: () => void;
 }) {
+  const { sfx } = useAudio();
   const data = step.data as { items: SequenceItem[]; correctOrder: string[] };
   const [placed, setPlaced] = useState<SequenceItem[]>([]);
   const [remaining, setRemaining] = useState<SequenceItem[]>(() =>
@@ -52,6 +54,7 @@ function SequenceStep({
       placed.length === data.correctOrder.length &&
       placed.every((item, idx) => item.id === data.correctOrder[idx]);
     setResult(isCorrect ? "correct" : "wrong");
+    sfx(isCorrect ? "correct-ding" : "wrong-buzz");
     if (isCorrect) {
       setTimeout(onStepComplete, 1200);
     }
@@ -209,6 +212,7 @@ function MultipleChoiceStep({
   step: InteractiveStep;
   onStepComplete: () => void;
 }) {
+  const { sfx } = useAudio();
   const data = step.data as { options: string[] };
   const correctIndex = step.solution as number;
   const [selected, setSelected] = useState<number | null>(null);
@@ -220,6 +224,7 @@ function MultipleChoiceStep({
   const submit = () => {
     if (selected === null) return;
     setSubmitted(true);
+    sfx(selected === correctIndex ? "correct-ding" : "wrong-buzz");
     if (selected === correctIndex) {
       setTimeout(onStepComplete, 1200);
     }

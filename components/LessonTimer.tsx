@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAudio } from "@/lib/audio/AudioContext";
 
 interface LessonTimerProps {
   targetMinutes: number;
@@ -41,9 +42,11 @@ const phaseColors: Record<TimerPhase, { text: string; glow: string; bg: string }
 };
 
 export default function LessonTimer({ targetMinutes }: LessonTimerProps) {
+  const { sfx } = useAudio();
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isVisibleRef = useRef(true);
+  const warningFiredRef = useRef(false);
 
   const targetSeconds = targetMinutes * 60;
   const phase = getPhase(elapsedSeconds, targetSeconds);
@@ -52,6 +55,14 @@ export default function LessonTimer({ targetMinutes }: LessonTimerProps) {
   // Whether we're in the last 20% approaching target (pulse zone)
   const ratio = elapsedSeconds / targetSeconds;
   const shouldPulse = ratio >= 0.8 && ratio <= 1;
+
+  // Fire timer warning SFX once when entering pulse zone
+  useEffect(() => {
+    if (shouldPulse && !warningFiredRef.current) {
+      warningFiredRef.current = true;
+      sfx("timer-warning");
+    }
+  }, [shouldPulse, sfx]);
 
   const startTimer = useCallback(() => {
     if (intervalRef.current) return;

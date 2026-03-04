@@ -10,6 +10,8 @@ import {
   completeLesson,
 } from "@/lib/progress";
 import type { Lesson, LessonSection } from "@/lib/types";
+import { useAudio } from "@/lib/audio/AudioContext";
+import VolumeToggle from "@/components/VolumeToggle";
 import LessonTimer from "@/components/LessonTimer";
 import SlideViewer from "@/components/SlideViewer";
 import ReadingSectionComponent from "@/components/ReadingSection";
@@ -33,6 +35,7 @@ function sectionLabel(section: LessonSection): string {
 export default function LessonPlayerPage() {
   const params = useParams();
   const router = useRouter();
+  const { sfx, playBGM } = useAudio();
   const slug = params.slug as string;
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
@@ -60,12 +63,20 @@ export default function LessonPlayerPage() {
     updateLessonProgress(slug, { status: "in-progress" });
   }, [slug]);
 
-  // Save section progress on change
+  // Save section progress on change + crossfade BGM
   useEffect(() => {
     if (lesson && currentSection > 0) {
       updateLessonProgress(slug, { sectionProgress: currentSection });
     }
-  }, [currentSection, lesson, slug]);
+    if (lesson) {
+      const sec = lesson.sections[currentSection];
+      if (sec?.type === "quiz") {
+        playBGM("battle");
+      } else {
+        playBGM("lesson-ambient");
+      }
+    }
+  }, [currentSection, lesson, slug, playBGM]);
 
   const handleSectionComplete = useCallback(() => {
     if (!lesson) return;
@@ -79,6 +90,7 @@ export default function LessonPlayerPage() {
     (score: number) => {
       if (!lesson) return;
       const profile = completeLesson(slug, score, lesson.xpReward);
+      sfx("unlock-celebration");
       setUnlockData({
         xpEarned: lesson.xpReward,
         newLevel: profile.level,
@@ -151,9 +163,10 @@ export default function LessonPlayerPage() {
             <h1 className="text-sm font-bold text-gold truncate">{lesson.title}</h1>
           </div>
 
-          {/* Lesson timer */}
-          <div className="shrink-0 hidden sm:block">
+          {/* Lesson timer + volume */}
+          <div className="shrink-0 hidden sm:flex items-center gap-2">
             <LessonTimer targetMinutes={lesson.estimatedMinutes} />
+            <VolumeToggle />
           </div>
 
           {/* Progress indicator */}

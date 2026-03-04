@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SlideSection } from "@/lib/types";
+import { useAudio } from "@/lib/audio/AudioContext";
 
 interface SlideViewerProps {
   section: SlideSection;
@@ -92,6 +93,7 @@ function TypewriterText({ text, speed = 30 }: { text: string; speed?: number }) 
 }
 
 export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
+  const { sfx } = useAudio();
   const [currentFrame, setCurrentFrame] = useState(0);
   const frames = section.frames;
   const frame = frames[currentFrame];
@@ -100,12 +102,13 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
   const variants = animationVariants[anim] || animationVariants.fade;
 
   const goNext = useCallback(() => {
+    sfx("slide-whoosh");
     if (isLast) {
       onComplete();
     } else {
       setCurrentFrame((prev) => prev + 1);
     }
-  }, [isLast, onComplete]);
+  }, [isLast, onComplete, sfx]);
 
   // auto-advance if frame has a duration
   useEffect(() => {
