@@ -1,0 +1,280 @@
+@import "tailwindcss";
+
+/* ============================================
+   KidKode - RPG Theme
+   ============================================ */
+
+@theme {
+  --color-void: #0a0a1a;
+  --color-void-light: #12122a;
+  --color-void-lighter: #1a1a3a;
+
+  --color-gold: #fbbf24;
+  --color-gold-dim: #92711a;
+  --color-gold-bright: #fde68a;
+
+  --color-xp-purple: #a855f7;
+  --color-xp-purple-dim: #6b21a8;
+  --color-xp-purple-bright: #c084fc;
+
+  --color-mana-blue: #3b82f6;
+  --color-mana-blue-dim: #1e3a6e;
+  --color-mana-blue-bright: #93c5fd;
+
+  --color-hp-green: #22c55e;
+  --color-hp-green-dim: #166534;
+  --color-hp-green-bright: #86efac;
+
+  --color-fire-red: #ef4444;
+  --color-fire-orange: #f97316;
+
+  --color-locked: #374151;
+  --color-locked-text: #6b7280;
+
+  --color-parchment: #e8dcc8;
+  --color-parchment-dim: #bfb49a;
+}
+
+/* ============================================
+   Base Styles
+   ============================================ */
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-void);
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+/* Subtle dot grid background */
+.bg-dungeon {
+  background-color: var(--color-void);
+  background-image:
+    radial-gradient(circle, rgba(168, 85, 247, 0.06) 1px, transparent 1px),
+    radial-gradient(circle, rgba(251, 191, 36, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px, 64px 64px;
+  background-position: 0 0, 16px 16px;
+}
+
+/* ============================================
+   RPG Utility Classes
+   ============================================ */
+
+/* Pixel-style border */
+.pixel-border {
+  border: 2px solid var(--color-gold-dim);
+  box-shadow:
+    inset 0 0 0 1px var(--color-void),
+    0 0 0 1px var(--color-gold-dim);
+}
+
+.pixel-border-purple {
+  border: 2px solid var(--color-xp-purple-dim);
+  box-shadow:
+    inset 0 0 0 1px var(--color-void),
+    0 0 0 1px var(--color-xp-purple-dim);
+}
+
+/* Glow effects */
+.glow-gold {
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.3), 0 0 30px rgba(251, 191, 36, 0.1);
+}
+
+.glow-purple {
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.3), 0 0 30px rgba(168, 85, 247, 0.1);
+}
+
+.glow-green {
+  box-shadow: 0 0 12px rgba(34, 197, 94, 0.3), 0 0 30px rgba(34, 197, 94, 0.1);
+}
+
+.glow-blue {
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.3), 0 0 30px rgba(59, 130, 246, 0.1);
+}
+
+.text-glow-gold {
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.5), 0 0 20px rgba(251, 191, 36, 0.2);
+}
+
+.text-glow-purple {
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5), 0 0 20px rgba(168, 85, 247, 0.2);
+}
+
+/* XP Bar */
+.xp-bar-track {
+  background: var(--color-void-lighter);
+  border: 1px solid var(--color-xp-purple-dim);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  background: linear-gradient(90deg, var(--color-xp-purple-dim), var(--color-xp-purple), var(--color-xp-purple-bright));
+  height: 100%;
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.xp-bar-fill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    transparent 100%
+  );
+  animation: xp-shimmer 2s ease-in-out infinite;
+}
+
+@keyframes xp-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Pulsing glow for available items */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(251, 191, 36, 0.3), 0 0 20px rgba(251, 191, 36, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(251, 191, 36, 0.5), 0 0 40px rgba(251, 191, 36, 0.2);
+  }
+}
+
+.pulse-available {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Floating animation for icons */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Quest connector line */
+.quest-line {
+  width: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--color-gold-dim),
+    var(--color-xp-purple-dim)
+  );
+}
+
+.quest-line-completed {
+  background: linear-gradient(
+    to bottom,
+    var(--color-hp-green),
+    var(--color-hp-green-dim)
+  );
+}
+
+.quest-line-locked {
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--color-locked) 0px,
+    var(--color-locked) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+/* RPG Card */
+.rpg-card {
+  background: linear-gradient(135deg, var(--color-void-light), var(--color-void-lighter));
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.rpg-card:hover {
+  border-color: rgba(251, 191, 36, 0.4);
+}
+
+.rpg-card-completed {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.rpg-card-available {
+  border-color: rgba(251, 191, 36, 0.4);
+  cursor: pointer;
+}
+
+.rpg-card-available:hover {
+  border-color: rgba(251, 191, 36, 0.7);
+  transform: translateX(4px);
+}
+
+.rpg-card-locked {
+  border-color: rgba(55, 65, 81, 0.3);
+  opacity: 0.5;
+}
+
+/* ============================================
+   Scrollbar
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-void);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-xp-purple-dim);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-xp-purple);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-xp-purple-dim) var(--color-void);
+}
+
+/* ============================================
+   Level Badge
+   ============================================ */
+
+.level-badge {
+  background: linear-gradient(135deg, var(--color-gold-dim), var(--color-gold));
+  color: var(--color-void);
+  font-weight: 800;
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* ============================================
+   Streak fire
+   ============================================ */
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  25% { opacity: 0.9; transform: scale(1.05); }
+  50% { opacity: 1; transform: scale(0.98); }
+  75% { opacity: 0.95; transform: scale(1.02); }
+}
+
+.streak-fire {
+  animation: flicker 1.5s ease-in-out infinite;
+  display: inline-block;
+}
