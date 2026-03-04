@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.3.0] - 2026-03-04
+
+### Added
+- Boss battle quiz system — quizzes with boss data render as RPG boss fights (#5)
+- BossBattleSection component with full battle state machine (intro, battle, victory, defeat phases)
+- Merge Conflict Hydra SVG boss sprite with idle bob, damage shake, attack lunge, and death animations
+- Boss sprite registry for future boss additions
+- Player HP hearts system with boss counterattack on wrong answers
+- Boss HP bar with animated damage depletion and floating damage numbers
+- Screen shake effect on boss attacks
+- "Study Up" defeat flow — shows missed questions and navigates back to lesson slides
+- Battle CSS keyframes: boss-idle-bob, damage-shake, attack-lunge, death-fade, float-up-damage, screen-shake
+- BossData type and Lesson.boss optional field
+- Boss data for Git lesson: Merge Conflict Hydra with git-themed attack names
+
 ## [0.2.0] - 2026-03-04
 
 ### Added

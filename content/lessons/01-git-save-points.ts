@@ -8,6 +8,20 @@ const lesson: Lesson = {
   estimatedMinutes: 12,
   xpReward: 50,
   icon: "💾",
+  boss: {
+    name: "Merge Conflict Hydra",
+    description: "A multi-headed beast born from diverging branches",
+    sprite: "hydra",
+    maxHp: 100,
+    playerMaxHp: 3,
+    damagePerCorrect: 20,
+    attackNames: [
+      "Diverging History Slam!",
+      "Unresolved Conflict Bite!",
+      "Detached HEAD Strike!",
+    ],
+    defeatText: "The Hydra's heads collapse as your commits align!",
+  },
   sections: [
     // ========== SLIDES ==========
     {
