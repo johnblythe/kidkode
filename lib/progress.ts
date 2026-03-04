@@ -31,6 +31,25 @@ export function saveProfile(profile: PlayerProfile): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
 }
 
+export function setPlayerName(name: string): PlayerProfile {
+  const profile = getProfile();
+  profile.name = name.trim();
+  saveProfile(profile);
+  return profile;
+}
+
+export function hasCustomName(): boolean {
+  if (typeof window === "undefined") return false;
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return false;
+  try {
+    const profile = JSON.parse(raw) as PlayerProfile;
+    return profile.name !== DEFAULT_PROFILE.name && profile.name.trim().length > 0;
+  } catch {
+    return false;
+  }
+}
+
 export function getLessonProgress(slug: string): LessonProgress {
   const profile = getProfile();
   return (

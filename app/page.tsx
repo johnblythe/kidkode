@@ -8,8 +8,10 @@ import {
   getProfile,
   resetDailyUnlock,
   updateLessonProgress,
+  hasCustomName,
 } from "@/lib/progress";
 import type { PlayerProfile, LessonProgress } from "@/lib/types";
+import HeroNameSetup from "@/components/HeroNameSetup";
 
 // ============================================
 // Sub-components
@@ -306,8 +308,20 @@ function LessonNode({
 
 export default function DashboardPage() {
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
+  const [needsName, setNeedsName] = useState<boolean | null>(null);
 
   useEffect(() => {
+    // Check if player has set a custom name
+    const named = hasCustomName();
+    setNeedsName(!named);
+
+    // If they haven't named themselves yet, don't load the full dashboard
+    if (!named) return;
+
+    loadDashboard();
+  }, []);
+
+  function loadDashboard() {
     // Reset daily unlock if it's a new day
     resetDailyUnlock();
 
@@ -342,8 +356,34 @@ export default function DashboardPage() {
     }
 
     setProfile(currentProfile);
-  }, []);
+  }
 
+  function handleNameSetupComplete() {
+    setNeedsName(false);
+    loadDashboard();
+  }
+
+  // Still determining whether name setup is needed
+  if (needsName === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+          className="text-4xl"
+        >
+          ⚔️
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Show hero name setup for first-run
+  if (needsName) {
+    return <HeroNameSetup onComplete={handleNameSetupComplete} />;
+  }
+
+  // Dashboard loading
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
