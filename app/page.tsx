@@ -475,7 +475,20 @@ export default function DashboardPage() {
         className="mt-12 text-center text-xs text-locked-text"
       >
         <div className="h-px bg-gradient-to-r from-transparent via-xp-purple-dim/30 to-transparent mb-4" />
-        More quests coming soon... ⚔️
+        <div className="flex items-center justify-center gap-4">
+          <span>More quests coming soon... ⚔️</span>
+          <button
+            onClick={() => {
+              if (window.confirm("Reset all progress? This cannot be undone.")) {
+                localStorage.clear();
+                window.location.reload();
+              }
+            }}
+            className="text-locked-text/50 hover:text-fire-red transition-colors"
+          >
+            Reset Progress
+          </button>
+        </div>
       </motion.footer>
     </main>
   );

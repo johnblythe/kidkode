@@ -7,6 +7,14 @@ const STORAGE_VOLUME = "kidkode:audio:volume";
 
 const CROSSFADE_DURATION = 0.4; // match framer-motion transitions
 
+// Add track names here once MP3 files are placed in public/audio/bgm/
+const AVAILABLE_BGM_TRACKS: Set<BgmTrack> = new Set([
+  // "dashboard",
+  // "lesson-ambient",
+  // "battle",
+  // "victory",
+]);
+
 class AudioManager {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -64,6 +72,7 @@ class AudioManager {
   playBGM(track: BgmTrack) {
     if (typeof window === "undefined") return;
     if (track === this.currentTrack) return;
+    if (!AVAILABLE_BGM_TRACKS.has(track)) return; // track not yet sourced
 
     try {
       const ctx = this.ensureContext();
