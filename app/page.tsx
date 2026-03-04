@@ -12,6 +12,8 @@ import {
 } from "@/lib/progress";
 import type { PlayerProfile, LessonProgress } from "@/lib/types";
 import HeroNameSetup from "@/components/HeroNameSetup";
+import VolumeToggle from "@/components/VolumeToggle";
+import { useAudio } from "@/lib/audio/AudioContext";
 
 // ============================================
 // Sub-components
@@ -155,6 +157,7 @@ function LessonNode({
   isLast: boolean;
 }) {
   const router = useRouter();
+  const { sfx } = useAudio();
   const isCompleted = progress.status === "completed";
   const isAvailable = progress.status === "available";
   const isInProgress = progress.status === "in-progress";
@@ -163,6 +166,7 @@ function LessonNode({
 
   function handleClick() {
     if (isClickable) {
+      sfx("button-click");
       router.push(`/lesson/${lesson.slug}`);
     }
   }
@@ -307,6 +311,7 @@ function LessonNode({
 // ============================================
 
 export default function DashboardPage() {
+  const { playBGM } = useAudio();
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [needsName, setNeedsName] = useState<boolean | null>(null);
 
@@ -356,6 +361,7 @@ export default function DashboardPage() {
     }
 
     setProfile(currentProfile);
+    playBGM("dashboard");
   }
 
   function handleNameSetupComplete() {
@@ -408,9 +414,12 @@ export default function DashboardPage() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-8"
       >
-        <h1 className="text-2xl sm:text-3xl font-[family-name:var(--font-pixel)] text-gold text-glow-gold tracking-wider">
-          KidKode
-        </h1>
+        <div className="flex items-center justify-center gap-3">
+          <h1 className="text-2xl sm:text-3xl font-[family-name:var(--font-pixel)] text-gold text-glow-gold tracking-wider">
+            KidKode
+          </h1>
+          <VolumeToggle />
+        </div>
         <p className="text-sm text-xp-purple-bright mt-2 tracking-widest uppercase">
           Level Up Your Coding Skills
         </p>
@@ -466,7 +475,20 @@ export default function DashboardPage() {
         className="mt-12 text-center text-xs text-locked-text"
       >
         <div className="h-px bg-gradient-to-r from-transparent via-xp-purple-dim/30 to-transparent mb-4" />
-        More quests coming soon... ⚔️
+        <div className="flex items-center justify-center gap-4">
+          <span>More quests coming soon... ⚔️</span>
+          <button
+            onClick={() => {
+              if (window.confirm("Reset all progress? This cannot be undone.")) {
+                localStorage.clear();
+                window.location.reload();
+              }
+            }}
+            className="text-locked-text/50 hover:text-fire-red transition-colors"
+          >
+            Reset Progress
+          </button>
+        </div>
       </motion.footer>
     </main>
   );

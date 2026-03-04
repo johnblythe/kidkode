@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Press_Start_2P } from "next/font/google";
+import { AudioProvider } from "@/lib/audio/AudioContext";
 import "./globals.css";
 
 const inter = Inter({
@@ -30,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${pressStart.variable} dark`}>
       <body className="font-[family-name:var(--font-inter)] antialiased bg-dungeon min-h-screen">
-        {children}
+        <AudioProvider>{children}</AudioProvider>
       </body>
     </html>
   );

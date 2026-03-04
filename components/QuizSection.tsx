@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { QuizSection as QuizSectionType, QuizQuestion } from "@/lib/types";
+import { useAudio } from "@/lib/audio/AudioContext";
 
 interface QuizSectionProps {
   section: QuizSectionType;
@@ -20,6 +21,7 @@ function QuestionCard({
   totalQuestions: number;
   onAnswer: (correct: boolean) => void;
 }) {
+  const { sfx } = useAudio();
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
 
@@ -34,6 +36,7 @@ function QuestionCard({
     if (revealed) return;
     setSelected(idx);
     setRevealed(true);
+    sfx(idx === correctIdx ? "correct-ding" : "wrong-buzz");
   };
 
   const handleNext = () => {
@@ -288,9 +291,14 @@ function ScoreScreen({
 }
 
 export default function QuizSection({ section, onComplete }: QuizSectionProps) {
+  const { sfx } = useAudio();
   const [currentQ, setCurrentQ] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
   const [showScore, setShowScore] = useState(false);
+
+  useEffect(() => {
+    sfx("quiz-start-horn");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const questions = section.questions;
 
