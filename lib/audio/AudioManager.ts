@@ -57,7 +57,7 @@ class AudioManager {
     try {
       const ctx = this.ensureContext();
       if (this._muted) return;
-      playSfx(ctx, name);
+      playSfx(ctx, name, this.masterGain ?? undefined);
     } catch {
       // Silently ignore audio failures
     }

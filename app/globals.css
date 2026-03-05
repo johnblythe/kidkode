@@ -307,11 +307,7 @@ body {
   100% { transform: translateY(0) scale(1); }
 }
 
-@keyframes death-fade {
-  0% { filter: brightness(1); transform: scale(1); opacity: 1; }
-  30% { filter: brightness(3); transform: scale(1.1); opacity: 1; }
-  100% { filter: brightness(5); transform: scale(0); opacity: 0; }
-}
+
 
 @keyframes float-up-damage {
   0% { transform: translateY(0); opacity: 1; }
@@ -339,9 +335,6 @@ body {
   animation: attack-lunge 0.4s ease-out;
 }
 
-.boss-dead {
-  animation: death-fade 1s ease-in forwards;
-}
 
 .float-up-damage {
   animation: float-up-damage 0.8s ease-out forwards;
@@ -377,9 +370,4 @@ body {
   border-radius: 6px;
 }
 
-.hp-bar-player .hp-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--color-hp-green-dim), var(--color-hp-green));
-  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  border-radius: 6px;
-}
+

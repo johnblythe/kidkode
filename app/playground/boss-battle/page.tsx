@@ -8,11 +8,19 @@ import VolumeToggle from "@/components/VolumeToggle";
 import { getLessonBySlug } from "@/content/lessons";
 import type { QuizSection } from "@/lib/types";
 
-const lesson = getLessonBySlug("git-save-points")!;
-const boss = lesson.boss!;
-const quizSection = lesson.sections.find(
-  (s): s is QuizSection => s.type === "quiz"
-)!;
+function getPlaygroundData() {
+  const lesson = getLessonBySlug("git-save-points");
+  if (!lesson) throw new Error('Playground: lesson "git-save-points" not found');
+  const boss = lesson.boss;
+  if (!boss) throw new Error('Playground: lesson "git-save-points" has no boss data');
+  const quizSection = lesson.sections.find(
+    (s): s is QuizSection => s.type === "quiz"
+  );
+  if (!quizSection) throw new Error('Playground: lesson "git-save-points" has no quiz section');
+  return { boss, quizSection };
+}
+
+const { boss, quizSection } = getPlaygroundData();
 
 type Result = "victory" | "defeat" | null;
 

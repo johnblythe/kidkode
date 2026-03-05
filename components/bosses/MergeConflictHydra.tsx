@@ -7,6 +7,7 @@ export interface BossSpriteProps {
 }
 
 export default function MergeConflictHydra({ state }: BossSpriteProps) {
+  // CSS classes for idle/damaged/attacking; death handled by framer-motion animate
   const stateClass =
     state === "idle"
       ? "boss-idle"
@@ -14,7 +15,7 @@ export default function MergeConflictHydra({ state }: BossSpriteProps) {
       ? "boss-damaged"
       : state === "attacking"
       ? "boss-attacking"
-      : "boss-dead";
+      : "";
 
   return (
     <motion.div

@@ -3,8 +3,9 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { QuizSection, BossData, QuizQuestion } from "@/lib/types";
-import { bossSprites } from "@/components/bosses";
+import { bossSprites, type BossSpriteState } from "@/components/bosses";
 import { useAudio } from "@/lib/audio/AudioContext";
+import { resolveCorrectIndex } from "@/lib/quiz-utils";
 
 interface BossBattleProps {
   section: QuizSection;
@@ -14,7 +15,6 @@ interface BossBattleProps {
 }
 
 type Phase = "intro" | "battle" | "victory" | "defeat";
-type BossSpriteState = "idle" | "attacking" | "damaged" | "dead";
 
 const HIT_PARTICLE_COLORS = ["#fbbf24", "#f97316", "#ffffff", "#ef4444"];
 
@@ -101,11 +101,10 @@ function PlayerHearts({ current, max }: { current: number; max: number }) {
   );
 }
 
-function DamageNumber({ value, x }: { value: number; x?: number }) {
+function DamageNumber({ value }: { value: number }) {
   return (
     <motion.div
       className="absolute top-0 left-1/2 pointer-events-none z-20 float-up-damage"
-      style={{ marginLeft: x ?? 0 }}
       initial={{ opacity: 1 }}
     >
       <span className="text-3xl font-black text-fire-orange drop-shadow-lg">
@@ -173,6 +172,10 @@ export default function BossBattleSection({
   const questions = section.questions;
   const BossSprite = bossSprites[boss.sprite];
 
+  if (!BossSprite) {
+    console.error(`[boss-battle] Unknown sprite key "${boss.sprite}". Available: ${Object.keys(bossSprites).join(", ")}`);
+  }
+
   const safeTimeout = useCallback((fn: () => void, ms: number) => {
     const id = setTimeout(fn, ms);
     timersRef.current.push(id);
@@ -234,10 +237,7 @@ export default function BossBattleSection({
       setActionLocked(true);
 
       const question = questions[currentQ];
-      const correctIdx =
-        typeof question.correctAnswer === "number"
-          ? question.correctAnswer
-          : question.options?.indexOf(question.correctAnswer as string) ?? -1;
+      const correctIdx = resolveCorrectIndex(question);
       const isCorrect = selectedIdx === correctIdx;
 
       if (isCorrect) {
@@ -297,7 +297,7 @@ export default function BossBattleSection({
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 120, damping: 10 }}
         >
-          {BossSprite && <BossSprite state="idle" />}
+          {BossSprite ? <BossSprite state="idle" /> : <div className="w-48 h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
         </motion.div>
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
@@ -462,7 +462,7 @@ export default function BossBattleSection({
 
         {/* Boss sprite */}
         <div className="flex justify-center my-6 relative">
-          {BossSprite && <BossSprite state={spriteState} />}
+          {BossSprite ? <BossSprite state={spriteState} /> : <div className="w-48 h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
           {/* Hit explosion */}
           <AnimatePresence>
             {showHitExplosion && <HitExplosion key="hit-explosion" />}
