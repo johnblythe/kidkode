@@ -11,6 +11,13 @@ const playgrounds = [
     icon: "🐉",
     color: "fire-red",
   },
+  {
+    title: "Branch Tree",
+    description: "SVG git branch tree visualization with commits, forks, and merges",
+    href: "/playground/branch-tree",
+    icon: "🌿",
+    color: "mana-blue",
+  },
 ];
 
 export default function PlaygroundIndex() {

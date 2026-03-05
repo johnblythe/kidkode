@@ -3,6 +3,8 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { InteractiveSection, InteractiveStep } from "@/lib/types";
+import type { DragDropScenarioStep } from "@/lib/git-branch-types";
+import DragDropStep from "@/components/DragDropStep";
 import { useAudio } from "@/lib/audio/AudioContext";
 
 interface InteractiveExerciseProps {
@@ -414,14 +416,20 @@ export default function InteractiveExercise({
             exit={{ opacity: 0, x: -30 }}
             transition={{ duration: 0.3 }}
           >
-            {(step.type === "sequence") && (
+            {step.type === "sequence" && (
               <SequenceStep step={step} onStepComplete={handleStepComplete} />
             )}
-            {(step.type === "multiple-choice") && (
+            {step.type === "multiple-choice" && (
               <MultipleChoiceStep step={step} onStepComplete={handleStepComplete} />
             )}
+            {step.type === "drag-drop" && (
+              <DragDropStep
+                scenario={step.data as unknown as DragDropScenarioStep}
+                onStepComplete={handleStepComplete}
+              />
+            )}
             {/* Fallback for unhandled types */}
-            {step.type !== "sequence" && step.type !== "multiple-choice" && (
+            {step.type !== "sequence" && step.type !== "multiple-choice" && step.type !== "drag-drop" && (
               <div>
                 <p className="text-slate-200 mb-4">{step.instruction}</p>
                 <motion.button

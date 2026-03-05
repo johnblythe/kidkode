@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.0] - 2026-03-04
+
+### Added
+- Interactive drag-and-drop git branch visualization exercise (#6)
+- GitBranchTree SVG component — renders commits, branches, forks, and merges with animated paths
+- DragDropStep component — palette-based drag-and-drop with hit detection, keyboard alternative, and merge conflict modal
+- Lesson 2: "Git Branches: Parallel Universes" — slides, reading section, 4 interactive drag-drop scenarios, quiz (#6)
+- Branch Tree playground page for isolated component testing
+- Observation-only step support in DragDropStep (Continue button when no draggable items)
+- `lib/git-branch-types.ts` — shared types for branch tree and drag-drop scenario data
+
 ## [0.3.0] - 2026-03-04
 
 ### Fixed
