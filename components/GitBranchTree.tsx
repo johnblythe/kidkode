@@ -206,44 +206,31 @@ function CommitNode({
   node,
   delay,
   highlightAsDropZone,
-  isActiveTarget,
   dropZoneRef,
 }: {
   node: LayoutNode;
   delay: number;
   highlightAsDropZone?: boolean;
-  isActiveTarget?: boolean;
   dropZoneRef?: (el: HTMLElement | SVGElement | null) => void;
 }) {
-  const showHighlight = highlightAsDropZone || isActiveTarget;
   return (
     <motion.g
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ delay, type: "spring", stiffness: 200, damping: 15 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay, duration: 0.3 }}
     >
       {/* Drop zone highlight ring */}
-      {showHighlight && (
+      {highlightAsDropZone && (
         <circle
           cx={node.x}
           cy={node.y}
           r={NODE_RADIUS + 8}
           fill="none"
           stroke={node.color}
-          strokeWidth={isActiveTarget ? 3 : 2}
-          strokeDasharray={isActiveTarget ? undefined : "4 3"}
-          opacity={isActiveTarget ? 0.9 : 0.4}
-          className={isActiveTarget ? undefined : "animate-pulse"}
-        />
-      )}
-      {/* Glow when active */}
-      {isActiveTarget && (
-        <circle
-          cx={node.x}
-          cy={node.y}
-          r={NODE_RADIUS + 4}
-          fill={node.color}
-          opacity={0.15}
+          strokeWidth={2}
+          strokeDasharray="4 3"
+          opacity={0.5}
+          className="animate-pulse"
         />
       )}
       {/* Node circle */}
@@ -358,7 +345,7 @@ export interface GitBranchTreeProps {
   dropZoneCommitIds?: string[];
   dropZoneBranchIds?: string[];
   onDropZoneRef?: (id: string, el: HTMLElement | SVGElement | null) => void;
-  activeDropTarget?: string | null;
+  onSvgRef?: (el: SVGSVGElement | null) => void;
 }
 
 export default function GitBranchTree({
@@ -366,7 +353,7 @@ export default function GitBranchTree({
   dropZoneCommitIds = [],
   dropZoneBranchIds = [],
   onDropZoneRef,
-  activeDropTarget,
+  onSvgRef,
 }: GitBranchTreeProps) {
   const { layoutBranches, forkLines, mergeLines, totalWidth, totalHeight } =
     computeLayout(tree);
@@ -376,6 +363,7 @@ export default function GitBranchTree({
   return (
     <div className="overflow-x-auto">
       <svg
+        ref={onSvgRef}
         viewBox={`0 0 ${totalWidth} ${totalHeight}`}
         className="w-full min-w-[300px]"
         style={{ maxHeight: "500px" }}
@@ -408,7 +396,6 @@ export default function GitBranchTree({
               node={node}
               delay={0.1 + ni * 0.08}
               highlightAsDropZone={allDropIds.includes(node.commit.id)}
-              isActiveTarget={activeDropTarget === node.commit.id}
               dropZoneRef={
                 onDropZoneRef
                   ? (el) => onDropZoneRef(node.commit.id, el)

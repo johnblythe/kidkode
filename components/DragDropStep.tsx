@@ -24,38 +24,58 @@ export default function DragDropStep({
   const [conflictResolved, setConflictResolved] = useState(false);
   const [keyboardMode, setKeyboardMode] = useState(false);
   const [selectedItem, setSelectedItem] = useState<number | null>(null);
-  const [activeDropTarget, setActiveDropTarget] = useState<string | null>(null);
 
-  const dropZoneRefs = useRef<Map<string, HTMLElement | SVGElement>>(new Map());
-  const containerRef = useRef<HTMLDivElement>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  // Store drop zone positions in SVG coordinate space (not screen space)
+  const dropZonePositions = useRef<Map<string, { x: number; y: number }>>(new Map());
 
   const registerDropZone = useCallback(
     (id: string, el: HTMLElement | SVGElement | null) => {
-      if (el) {
-        dropZoneRefs.current.set(id, el);
+      if (el && el instanceof SVGElement) {
+        // Read the SVG-space coordinates directly from the element attributes
+        const cx = parseFloat(el.getAttribute("cx") ?? "0");
+        const cy = parseFloat(el.getAttribute("cy") ?? "0");
+        dropZonePositions.current.set(id, { x: cx, y: cy });
       } else {
-        dropZoneRefs.current.delete(id);
+        dropZonePositions.current.delete(id);
       }
     },
     []
   );
 
-  // ── Hit detection ──
+  // Register the SVG element for coordinate conversion
+  const registerSvg = useCallback((el: SVGSVGElement | null) => {
+    svgRef.current = el;
+  }, []);
+
+  // ── Hit detection using SVG coordinate math ──
   const findDropTarget = useCallback(
     (pointerX: number, pointerY: number): string | null => {
-      for (const [id, el] of dropZoneRefs.current.entries()) {
-        const rect = el.getBoundingClientRect();
-        const threshold = 30; // generous hit area
-        if (
-          pointerX >= rect.left - threshold &&
-          pointerX <= rect.right + threshold &&
-          pointerY >= rect.top - threshold &&
-          pointerY <= rect.bottom + threshold
-        ) {
-          return id;
+      const svg = svgRef.current;
+      if (!svg) return null;
+
+      // Convert screen pointer position to SVG coordinate space
+      const pt = svg.createSVGPoint();
+      pt.x = pointerX;
+      pt.y = pointerY;
+      const ctm = svg.getScreenCTM();
+      if (!ctm) return null;
+      const svgPt = pt.matrixTransform(ctm.inverse());
+
+      // Check each registered drop zone position
+      const HIT_RADIUS = 40; // SVG units — generous hit area
+      let bestId: string | null = null;
+      let bestDist = Infinity;
+      for (const [id, pos] of dropZonePositions.current.entries()) {
+        const dx = svgPt.x - pos.x;
+        const dy = svgPt.y - pos.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < HIT_RADIUS && dist < bestDist) {
+          bestDist = dist;
+          bestId = id;
         }
       }
-      return null;
+      return bestId;
     },
     []
   );
@@ -70,10 +90,8 @@ export default function DragDropStep({
       let isValid = false;
 
       if (item.type === "branch" && expected.type === "create-branch") {
-        // For create-branch, target should be the forkFromCommit
         isValid = targetId === expected.target;
       } else if (item.type === "commit" && expected.type === "place-commit") {
-        // For place-commit, target should be the branch tip
         isValid = targetId === expected.target;
       } else if (expected.type === "merge") {
         isValid = targetId === expected.target;
@@ -82,13 +100,11 @@ export default function DragDropStep({
       if (isValid) {
         sfx("correct-ding");
 
-        // Check if this triggers a conflict
         if (scenario.triggerConflict && !conflictResolved) {
           setShowConflict(true);
           return;
         }
 
-        // Apply result tree and mark complete
         setTree(scenario.resultTree);
         setCompleted(true);
         setHint(null);
@@ -104,18 +120,9 @@ export default function DragDropStep({
     [scenario, sfx, onStepComplete, conflictResolved]
   );
 
-  // ── Drag move handler (highlight active target) ──
-  const handleDrag = useCallback(
-    (_: unknown, info: { point: { x: number; y: number } }) => {
-      setActiveDropTarget(findDropTarget(info.point.x, info.point.y));
-    },
-    [findDropTarget]
-  );
-
   // ── Drag end handler ──
   const handleDragEnd = useCallback(
     (itemIndex: number, info: { point: { x: number; y: number } }) => {
-      setActiveDropTarget(null);
       const targetId = findDropTarget(info.point.x, info.point.y);
       if (!targetId) return;
       validateAction(itemIndex, targetId);
@@ -152,7 +159,7 @@ export default function DragDropStep({
     setTimeout(onStepComplete, 1500);
   }, [scenario.resultTree, sfx, onStepComplete]);
 
-  // Compute which commit IDs are valid drop targets
+  // Compute which IDs are valid drop targets
   const dropZoneCommitIds = (() => {
     const expected = scenario.expectedAction;
     if (expected.type === "create-branch" || expected.type === "place-commit") {
@@ -169,7 +176,7 @@ export default function DragDropStep({
   })();
 
   return (
-    <div ref={containerRef}>
+    <div>
       {/* Instruction */}
       <p className="text-lg text-slate-200 mb-4">{scenario.instruction}</p>
 
@@ -180,10 +187,10 @@ export default function DragDropStep({
           dropZoneCommitIds={dropZoneCommitIds}
           dropZoneBranchIds={dropZoneBranchIds}
           onDropZoneRef={registerDropZone}
-          activeDropTarget={activeDropTarget}
+          onSvgRef={registerSvg}
         />
 
-        {/* Keyboard mode: target buttons overlaid */}
+        {/* Keyboard mode: target buttons */}
         {keyboardMode && selectedItem !== null && (
           <div className="mt-3 flex gap-2 flex-wrap">
             <span className="text-xs text-slate-400">Place on:</span>
@@ -230,9 +237,7 @@ export default function DragDropStep({
                 key={idx}
                 drag
                 dragSnapToOrigin
-                dragElastic={0.2}
-                dragTransition={{ bounceStiffness: 600, bounceDamping: 40 }}
-                onDrag={handleDrag}
+                dragTransition={{ bounceStiffness: 5000, bounceDamping: 100 }}
                 onDragEnd={(_, info) => handleDragEnd(idx, info)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -262,7 +267,7 @@ export default function DragDropStep({
         </div>
       )}
 
-      {/* Observation-only step — no items to drag, just a Continue button */}
+      {/* Observation-only step */}
       {!completed && scenario.availableItems.length === 0 && (
         <motion.button
           whileHover={{ scale: 1.05 }}
