@@ -24,6 +24,7 @@ export default function DragDropStep({
   const [conflictResolved, setConflictResolved] = useState(false);
   const [keyboardMode, setKeyboardMode] = useState(false);
   const [selectedItem, setSelectedItem] = useState<number | null>(null);
+  const [activeDropTarget, setActiveDropTarget] = useState<string | null>(null);
 
   const dropZoneRefs = useRef<Map<string, HTMLElement | SVGElement>>(new Map());
   const containerRef = useRef<HTMLDivElement>(null);
@@ -103,14 +104,20 @@ export default function DragDropStep({
     [scenario, sfx, onStepComplete, conflictResolved]
   );
 
+  // ── Drag move handler (highlight active target) ──
+  const handleDrag = useCallback(
+    (_: unknown, info: { point: { x: number; y: number } }) => {
+      setActiveDropTarget(findDropTarget(info.point.x, info.point.y));
+    },
+    [findDropTarget]
+  );
+
   // ── Drag end handler ──
   const handleDragEnd = useCallback(
     (itemIndex: number, info: { point: { x: number; y: number } }) => {
+      setActiveDropTarget(null);
       const targetId = findDropTarget(info.point.x, info.point.y);
-      if (!targetId) {
-        // Snapped back automatically by dragSnapToOrigin
-        return;
-      }
+      if (!targetId) return;
       validateAction(itemIndex, targetId);
     },
     [findDropTarget, validateAction]
@@ -173,6 +180,7 @@ export default function DragDropStep({
           dropZoneCommitIds={dropZoneCommitIds}
           dropZoneBranchIds={dropZoneBranchIds}
           onDropZoneRef={registerDropZone}
+          activeDropTarget={activeDropTarget}
         />
 
         {/* Keyboard mode: target buttons overlaid */}
@@ -222,6 +230,9 @@ export default function DragDropStep({
                 key={idx}
                 drag
                 dragSnapToOrigin
+                dragElastic={0.2}
+                dragTransition={{ bounceStiffness: 600, bounceDamping: 40 }}
+                onDrag={handleDrag}
                 onDragEnd={(_, info) => handleDragEnd(idx, info)}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

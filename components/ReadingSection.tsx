@@ -92,6 +92,28 @@ function renderMarkdown(md: string): React.ReactNode {
       continue;
     }
 
+    // Fenced code block
+    if (line.startsWith("```")) {
+      const codeLines: string[] = [];
+      i++; // skip opening ```
+      while (i < lines.length && !lines[i].startsWith("```")) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      if (i < lines.length) i++; // skip closing ```
+      elements.push(
+        <pre
+          key={elements.length}
+          className="bg-void rounded-lg p-4 mb-4 overflow-x-auto border border-gold-dim/20"
+        >
+          <code className="text-xp-purple-bright font-mono text-sm whitespace-pre">
+            {codeLines.join("\n")}
+          </code>
+        </pre>
+      );
+      continue;
+    }
+
     // Paragraph
     elements.push(
       <p key={elements.length} className="text-slate-200 leading-relaxed mb-4">

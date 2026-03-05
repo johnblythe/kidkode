@@ -4,12 +4,12 @@ import { motion } from "framer-motion";
 import type { GitTreeState, GitBranchDef, GitCommitNode } from "@/lib/git-branch-types";
 
 // ── Layout Constants ──
-const NODE_RADIUS = 16;
-const NODE_SPACING_Y = 70;
-const BRANCH_SPACING_X = 160;
+const NODE_RADIUS = 10;
+const NODE_SPACING_Y = 56;
+const BRANCH_SPACING_X = 140;
 const PADDING_TOP = 40;
 const PADDING_LEFT = 30;
-const LABEL_OFFSET_X = 28;
+const LABEL_OFFSET_X = 20;
 
 // ── Color map: tailwind token → hex ──
 const COLOR_MAP: Record<string, string> = {
@@ -31,6 +31,7 @@ interface LayoutNode {
   x: number;
   y: number;
   color: string;
+  isPhantom?: boolean;
 }
 
 interface LayoutBranch {
@@ -41,14 +42,12 @@ interface LayoutBranch {
 }
 
 function computeLayout(tree: GitTreeState) {
-  // Assign x position per branch (main = 0, others stacked right)
   const branchOrder = tree.branches.map((b) => b.id);
   const branchXMap = new Map<string, number>();
   branchOrder.forEach((id, i) => {
     branchXMap.set(id, PADDING_LEFT + i * BRANCH_SPACING_X);
   });
 
-  // Group commits by branch, sorted by position
   const commitsByBranch = new Map<string, GitCommitNode[]>();
   for (const c of tree.commits) {
     const list = commitsByBranch.get(c.branch) ?? [];
@@ -59,8 +58,6 @@ function computeLayout(tree: GitTreeState) {
     list.sort((a, b) => a.position - b.position);
   }
 
-  // Compute global y position for each commit
-  // Main branch commits get sequential y. Feature branch commits start at fork point.
   const commitYMap = new Map<string, number>();
   let globalY = 0;
 
@@ -82,18 +79,13 @@ function computeLayout(tree: GitTreeState) {
       : 0;
 
     for (const c of commits) {
-      // If this y slot is already occupied on main, push down
-      while ([...commitYMap.values()].includes(startY) && commitsByBranch.get(mainBranch.id)?.some(mc => commitYMap.get(mc.id) === startY)) {
-        // Check if there's a main commit at this y — if so, it's fine to share the row
-        break;
-      }
       commitYMap.set(c.id, startY);
       startY++;
       if (startY > globalY) globalY = startY;
     }
   }
 
-  // Build layout nodes
+  // Build layout branches
   const layoutBranches: LayoutBranch[] = tree.branches.map((branch) => {
     const bx = branchXMap.get(branch.id) ?? 0;
     const color = resolveColor(branch.color);
@@ -107,10 +99,30 @@ function computeLayout(tree: GitTreeState) {
     return { branch, x: bx, color, nodes };
   });
 
+  // Add phantom tip node for branches with 0 commits but a forkFromCommit
+  for (let i = 1; i < layoutBranches.length; i++) {
+    const branch = tree.branches[i];
+    const lb = layoutBranches[i];
+    if (lb.nodes.length === 0 && branch.forkFromCommit) {
+      const forkY = commitYMap.get(branch.forkFromCommit);
+      if (forkY !== undefined) {
+        const tipY = forkY + 1;
+        lb.nodes.push({
+          commit: { id: branch.id, message: "", branch: branch.id, position: 0 },
+          x: lb.x,
+          y: PADDING_TOP + tipY * NODE_SPACING_Y,
+          color: lb.color,
+          isPhantom: true,
+        });
+        if (tipY + 1 > globalY) globalY = tipY + 1;
+      }
+    }
+  }
+
   const totalHeight = PADDING_TOP + globalY * NODE_SPACING_Y + 40;
   const totalWidth = PADDING_LEFT + tree.branches.length * BRANCH_SPACING_X + 60;
 
-  // Compute fork lines (from parent branch commit to first child branch commit)
+  // Compute fork lines
   const forkLines: Array<{ x1: number; y1: number; x2: number; y2: number; color: string }> = [];
   for (let i = 1; i < tree.branches.length; i++) {
     const branch = tree.branches[i];
@@ -133,14 +145,10 @@ function computeLayout(tree: GitTreeState) {
 
   // Compute merge lines
   const mergeLines: Array<{ x1: number; y1: number; x2: number; y2: number; color: string }> = [];
-  // Look for merge commits (commits on main that have a branch merging into them)
-  // We detect these by commits whose id starts with "merge-"
   for (const lb of layoutBranches) {
     for (const node of lb.nodes) {
       if (node.commit.id.startsWith("merge-")) {
-        // Find the last commit of the source branch
         const sourceId = node.commit.id.replace("merge-", "");
-        // Find the branch that was merged
         for (let i = 1; i < layoutBranches.length; i++) {
           const srcBranch = layoutBranches[i];
           if (srcBranch.branch.id === sourceId || srcBranch.branch.name === sourceId) {
@@ -198,31 +206,44 @@ function CommitNode({
   node,
   delay,
   highlightAsDropZone,
+  isActiveTarget,
   dropZoneRef,
 }: {
   node: LayoutNode;
   delay: number;
   highlightAsDropZone?: boolean;
+  isActiveTarget?: boolean;
   dropZoneRef?: (el: HTMLElement | SVGElement | null) => void;
 }) {
+  const showHighlight = highlightAsDropZone || isActiveTarget;
   return (
     <motion.g
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ delay, type: "spring", stiffness: 200, damping: 15 }}
     >
-      {/* Drop zone highlight */}
-      {highlightAsDropZone && (
+      {/* Drop zone highlight ring */}
+      {showHighlight && (
         <circle
           cx={node.x}
           cy={node.y}
-          r={NODE_RADIUS + 6}
+          r={NODE_RADIUS + 8}
           fill="none"
           stroke={node.color}
-          strokeWidth={2}
-          strokeDasharray="4 3"
-          opacity={0.5}
-          className="animate-pulse"
+          strokeWidth={isActiveTarget ? 3 : 2}
+          strokeDasharray={isActiveTarget ? undefined : "4 3"}
+          opacity={isActiveTarget ? 0.9 : 0.4}
+          className={isActiveTarget ? undefined : "animate-pulse"}
+        />
+      )}
+      {/* Glow when active */}
+      {isActiveTarget && (
+        <circle
+          cx={node.x}
+          cy={node.y}
+          r={NODE_RADIUS + 4}
+          fill={node.color}
+          opacity={0.15}
         />
       )}
       {/* Node circle */}
@@ -231,28 +252,44 @@ function CommitNode({
         cx={node.x}
         cy={node.y}
         r={NODE_RADIUS}
-        fill="#0a0a1a"
+        fill={node.isPhantom ? "transparent" : "#0a0a1a"}
         stroke={node.color}
-        strokeWidth={3}
+        strokeWidth={node.isPhantom ? 2 : 3}
+        strokeDasharray={node.isPhantom ? "4 3" : undefined}
+        opacity={node.isPhantom ? 0.6 : 1}
         data-commit-id={node.commit.id}
         data-branch-id={node.commit.branch}
       />
       {/* Message label */}
-      <text
-        x={node.x + LABEL_OFFSET_X}
-        y={node.y + 5}
-        fill="#e2e8f0"
-        fontSize={12}
-        fontFamily="monospace"
-      >
-        {node.commit.message}
-      </text>
+      {node.commit.message && (
+        <text
+          x={node.x + LABEL_OFFSET_X}
+          y={node.y + 4}
+          fill="#e2e8f0"
+          fontSize={12}
+          fontFamily="monospace"
+        >
+          {node.commit.message}
+        </text>
+      )}
+      {/* "drop here" hint for phantom nodes */}
+      {node.isPhantom && highlightAsDropZone && (
+        <text
+          x={node.x + LABEL_OFFSET_X}
+          y={node.y + 4}
+          fill={node.color}
+          fontSize={11}
+          fontFamily="monospace"
+          opacity={0.7}
+        >
+          ← drop here
+        </text>
+      )}
     </motion.g>
   );
 }
 
 function ForkLine({ x1, y1, x2, y2, color }: { x1: number; y1: number; x2: number; y2: number; color: string }) {
-  // Curved path from parent commit to first child commit
   const midY = (y1 + y2) / 2;
   const d = `M ${x1} ${y1} C ${x1} ${midY}, ${x2} ${midY}, ${x2} ${y2}`;
   return (
@@ -281,6 +318,7 @@ function BranchLabel({
   y: number;
   color: string;
 }) {
+  const labelWidth = branch.name.length * 7.5 + 16;
   return (
     <motion.g
       initial={{ opacity: 0, y: -10 }}
@@ -288,9 +326,9 @@ function BranchLabel({
       transition={{ delay: 0.2 }}
     >
       <rect
-        x={x - 30}
+        x={x - labelWidth / 2}
         y={y - 30}
-        width={60}
+        width={labelWidth}
         height={18}
         rx={4}
         fill={color}
@@ -317,12 +355,10 @@ function BranchLabel({
 
 export interface GitBranchTreeProps {
   tree: GitTreeState;
-  /** IDs of commits that should show as drop zones */
   dropZoneCommitIds?: string[];
-  /** IDs of branches that should show as drop zones */
   dropZoneBranchIds?: string[];
-  /** Ref callback for registering drop zone elements */
   onDropZoneRef?: (id: string, el: HTMLElement | SVGElement | null) => void;
+  activeDropTarget?: string | null;
 }
 
 export default function GitBranchTree({
@@ -330,15 +366,18 @@ export default function GitBranchTree({
   dropZoneCommitIds = [],
   dropZoneBranchIds = [],
   onDropZoneRef,
+  activeDropTarget,
 }: GitBranchTreeProps) {
   const { layoutBranches, forkLines, mergeLines, totalWidth, totalHeight } =
     computeLayout(tree);
+
+  const allDropIds = [...dropZoneCommitIds, ...dropZoneBranchIds];
 
   return (
     <div className="overflow-x-auto">
       <svg
         viewBox={`0 0 ${totalWidth} ${totalHeight}`}
-        className="w-full min-w-[400px]"
+        className="w-full min-w-[300px]"
         style={{ maxHeight: "500px" }}
       >
         {/* Fork lines */}
@@ -368,7 +407,8 @@ export default function GitBranchTree({
               key={node.commit.id}
               node={node}
               delay={0.1 + ni * 0.08}
-              highlightAsDropZone={dropZoneCommitIds.includes(node.commit.id)}
+              highlightAsDropZone={allDropIds.includes(node.commit.id)}
+              isActiveTarget={activeDropTarget === node.commit.id}
               dropZoneRef={
                 onDropZoneRef
                   ? (el) => onDropZoneRef(node.commit.id, el)
