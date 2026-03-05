@@ -16,6 +16,33 @@ interface BossBattleProps {
 type Phase = "intro" | "battle" | "victory" | "defeat";
 type BossSpriteState = "idle" | "attacking" | "damaged" | "dead";
 
+const HIT_PARTICLE_COLORS = ["#fbbf24", "#f97316", "#ffffff", "#ef4444"];
+
+function HitExplosion() {
+  return (
+    <div className="absolute inset-0 z-30 pointer-events-none">
+      {/* White flash overlay */}
+      <div className="absolute inset-0 bg-white rounded-lg hit-flash" />
+      {/* Burst particles */}
+      {Array.from({ length: 8 }, (_, i) => {
+        const angle = (i / 8) * Math.PI * 2;
+        const dx = Math.cos(angle) * 60;
+        const dy = Math.sin(angle) * 60;
+        return (
+          <motion.div
+            key={i}
+            className="absolute left-1/2 top-1/2 w-3 h-3 rounded-full"
+            style={{ backgroundColor: HIT_PARTICLE_COLORS[i % HIT_PARTICLE_COLORS.length] }}
+            initial={{ x: 0, y: 0, scale: 1, opacity: 1 }}
+            animate={{ x: dx, y: dy, scale: 0, opacity: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 function HPBar({
   current,
   max,
@@ -139,6 +166,7 @@ export default function BossBattleSection({
   const [correctCount, setCorrectCount] = useState(0);
   const [wrongQuestions, setWrongQuestions] = useState<QuizQuestion[]>([]);
   const [actionLocked, setActionLocked] = useState(false);
+  const [showHitExplosion, setShowHitExplosion] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const questions = section.questions;
@@ -203,12 +231,14 @@ export default function BossBattleSection({
 
       if (isCorrect) {
         // Player attack hits boss
-        sfx("correct-ding");
+        sfx("boss-hit");
+        setShowHitExplosion(true);
         setSpriteState("damaged");
         const newBossHp = Math.max(0, bossHp - boss.damagePerCorrect);
         setBossHp(newBossHp);
         setDamageShow(boss.damagePerCorrect);
         setCorrectCount((c) => c + 1);
+        setTimeout(() => setShowHitExplosion(false), 500);
         setTimeout(() => setDamageShow(null), 800);
         advanceOrEnd(newBossHp, playerHp, true);
       } else {
@@ -421,6 +451,10 @@ export default function BossBattleSection({
         {/* Boss sprite */}
         <div className="flex justify-center my-6 relative">
           {BossSprite && <BossSprite state={spriteState} />}
+          {/* Hit explosion */}
+          <AnimatePresence>
+            {showHitExplosion && <HitExplosion key="hit-explosion" />}
+          </AnimatePresence>
           {/* Damage number */}
           <AnimatePresence>
             {damageShow !== null && (

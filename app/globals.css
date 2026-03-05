@@ -351,6 +351,16 @@ body {
   animation: screen-shake 0.3s ease-out;
 }
 
+/* Hit flash overlay */
+@keyframes hit-flash {
+  0% { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+
+.hit-flash {
+  animation: hit-flash 0.25s ease-out forwards;
+}
+
 /* HP Bars */
 .hp-bar-track {
   height: 12px;

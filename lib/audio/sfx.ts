@@ -115,6 +115,31 @@ export function timerWarning(ctx: Ctx) {
   });
 }
 
+/** Punchy 8-bit impact — boss takes a hit */
+export function bossHit(ctx: Ctx) {
+  // Noise burst (60ms, highpass 800Hz)
+  const bufferSize = ctx.sampleRate * 0.06;
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const hp = ctx.createBiquadFilter();
+  hp.type = "highpass";
+  hp.frequency.value = 800;
+  const gNoise = ctx.createGain();
+  gNoise.gain.setValueAtTime(0.35, ctx.currentTime);
+  gNoise.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.06);
+  src.connect(hp).connect(gNoise).connect(ctx.destination);
+  src.start(ctx.currentTime);
+  src.stop(ctx.currentTime + 0.06);
+
+  // Square-wave pitch drop (400→100Hz, 80ms)
+  osc(ctx, "square", 400, 0.08, 0.3, 100);
+}
+
 /** Multi-voice celebration — unlock/achievement */
 export function unlockCelebration(ctx: Ctx) {
   // Arpeggio
@@ -158,7 +183,8 @@ export type SfxName =
   | "slide-whoosh"
   | "quiz-start-horn"
   | "timer-warning"
-  | "unlock-celebration";
+  | "unlock-celebration"
+  | "boss-hit";
 
 const SFX_MAP: Record<SfxName, (ctx: Ctx) => void> = {
   "correct-ding": correctDing,
@@ -169,6 +195,7 @@ const SFX_MAP: Record<SfxName, (ctx: Ctx) => void> = {
   "quiz-start-horn": quizStartHorn,
   "timer-warning": timerWarning,
   "unlock-celebration": unlockCelebration,
+  "boss-hit": bossHit,
 };
 
 export function playSfx(ctx: Ctx, name: SfxName) {
