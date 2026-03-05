@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { QuizSection as QuizSectionType, QuizQuestion } from "@/lib/types";
 import { useAudio } from "@/lib/audio/AudioContext";
+import { resolveCorrectIndex } from "@/lib/quiz-utils";
 
 interface QuizSectionProps {
   section: QuizSectionType;
@@ -25,10 +26,7 @@ function QuestionCard({
   const [selected, setSelected] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
 
-  const correctIdx =
-    typeof question.correctAnswer === "number"
-      ? question.correctAnswer
-      : question.options?.indexOf(question.correctAnswer as string) ?? -1;
+  const correctIdx = resolveCorrectIndex(question);
 
   const isCorrect = selected === correctIdx;
 

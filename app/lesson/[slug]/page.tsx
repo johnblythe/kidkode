@@ -17,6 +17,7 @@ import SlideViewer from "@/components/SlideViewer";
 import ReadingSectionComponent from "@/components/ReadingSection";
 import InteractiveExercise from "@/components/InteractiveExercise";
 import QuizSection from "@/components/QuizSection";
+import BossBattleSection from "@/components/BossBattleSection";
 import UnlockScreen from "@/components/UnlockScreen";
 
 function sectionLabel(section: LessonSection): string {
@@ -251,9 +252,16 @@ export default function LessonPlayerPage() {
                 onComplete={handleSectionComplete}
               />
             )}
-            {section.type === "quiz" && (
+            {section.type === "quiz" && lesson.boss ? (
+              <BossBattleSection
+                section={section}
+                boss={lesson.boss}
+                onComplete={handleQuizComplete}
+                onStudyUp={(idx) => setCurrentSection(idx)}
+              />
+            ) : section.type === "quiz" ? (
               <QuizSection section={section} onComplete={handleQuizComplete} />
-            )}
+            ) : null}
           </motion.div>
         </AnimatePresence>
       </main>

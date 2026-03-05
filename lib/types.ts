@@ -53,6 +53,17 @@ export interface QuizSection {
 
 export type LessonSection = SlideSection | ReadingSection | InteractiveSection | QuizSection;
 
+export interface BossData {
+  name: string;
+  description: string;
+  sprite: string;
+  maxHp: number;
+  playerMaxHp: number;
+  damagePerCorrect: number;
+  attackNames: string[];
+  defeatText: string;
+}
+
 export interface Lesson {
   slug: string;
   title: string;
@@ -62,6 +73,7 @@ export interface Lesson {
   xpReward: number;
   icon: string; // emoji
   sections: LessonSection[];
+  boss?: BossData;
 }
 
 // ============================================

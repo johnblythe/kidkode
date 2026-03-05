@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.3.0] - 2026-03-04
+
+### Fixed
+- correctAnswer resolution silently producing -1 for true-false questions — shared `resolveCorrectIndex()` helper with `["True","False"]` fallback (#10)
+- SFX bypassing master volume — all SFX now route through masterGain node (#10)
+- CSS and framer-motion fighting over death animation in MergeConflictHydra — CSS `boss-dead` class removed, framer-motion is sole owner (#10)
+- Triple non-null assertions in playground page replaced with descriptive error guards (#10)
+- Missing boss sprite silently rendering invisible boss — now shows fallback placeholder (#10)
+
+### Changed
+- Extracted duplicated `correctAnswer` logic from BossBattleSection and QuizSection into `lib/quiz-utils.ts` (#10)
+- Extracted duplicated noise buffer generation in sfx.ts into `noiseSource()` helper (#10)
+- Shared `BossSpriteState` type from `bosses/index.ts` instead of duplicating (#10)
+- Removed unused `DamageNumber.x` prop, `.hp-bar-player` CSS, `death-fade` keyframe (#10)
+
+### Added
+- Boss battle quiz system — quizzes with boss data render as RPG boss fights (#5)
+- BossBattleSection component with full battle state machine (intro, battle, victory, defeat phases)
+- Merge Conflict Hydra SVG boss sprite with idle bob, damage shake, attack lunge, and death animations
+- Boss sprite registry for future boss additions
+- Player HP hearts system with boss counterattack on wrong answers
+- Boss HP bar with animated damage depletion and floating damage numbers
+- Screen shake effect on boss attacks
+- "Study Up" defeat flow — shows missed questions and navigates back to lesson slides
+- Battle CSS keyframes: boss-idle-bob, damage-shake, attack-lunge, death-fade, float-up-damage, screen-shake
+- BossData type and Lesson.boss optional field
+- Boss data for Git lesson: Merge Conflict Hydra with git-themed attack names
+
 ## [0.2.0] - 2026-03-04
 
 ### Added

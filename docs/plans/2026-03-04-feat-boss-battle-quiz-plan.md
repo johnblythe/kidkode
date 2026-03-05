@@ -221,17 +221,17 @@ If #4 isn't done yet, the battle works silently and audio hooks are added later.
 
 ## Acceptance Criteria
 
-- [ ] Lessons with `boss` data render `BossBattleSection` instead of `QuizSection`
-- [ ] Lessons without `boss` still render original `QuizSection` (backward compat)
-- [ ] Boss sprite visible with idle animation during battle
-- [ ] Correct answer triggers attack animation + boss HP decrease
-- [ ] Wrong answer triggers boss attack animation + player HP decrease
-- [ ] Boss HP reaching 0 triggers death animation → unlock flow
-- [ ] Player HP reaching 0 triggers defeat screen with "Study Up" option
-- [ ] "Study Up" navigates back to lesson slides
-- [ ] Returning to quiz after "Study Up" resets battle (full HP both sides)
-- [ ] Attack options styled as spell/move names, not generic "A/B/C/D"
-- [ ] HP bars animate smoothly on damage
+- [x] Lessons with `boss` data render `BossBattleSection` instead of `QuizSection`
+- [x] Lessons without `boss` still render original `QuizSection` (backward compat)
+- [x] Boss sprite visible with idle animation during battle
+- [x] Correct answer triggers attack animation + boss HP decrease
+- [x] Wrong answer triggers boss attack animation + player HP decrease
+- [x] Boss HP reaching 0 triggers death animation → unlock flow
+- [x] Player HP reaching 0 triggers defeat screen with "Study Up" option
+- [x] "Study Up" navigates back to lesson slides
+- [x] Returning to quiz after "Study Up" resets battle (full HP both sides)
+- [x] Attack options styled as spell/move names, not generic "A/B/C/D"
+- [x] HP bars animate smoothly on damage
 
 ## Dependencies & Risks
 
