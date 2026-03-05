@@ -25,57 +25,17 @@ export default function DragDropStep({
   const [keyboardMode, setKeyboardMode] = useState(false);
   const [selectedItem, setSelectedItem] = useState<number | null>(null);
 
-  const svgRef = useRef<SVGSVGElement | null>(null);
-  // Store drop zone positions in SVG coordinate space (not screen space)
-  const dropZonePositions = useRef<Map<string, { x: number; y: number }>>(new Map());
-
-  const registerDropZone = useCallback(
-    (id: string, el: HTMLElement | SVGElement | null) => {
-      if (el && el instanceof SVGElement) {
-        // Read the SVG-space coordinates directly from the element attributes
-        const cx = parseFloat(el.getAttribute("cx") ?? "0");
-        const cy = parseFloat(el.getAttribute("cy") ?? "0");
-        dropZonePositions.current.set(id, { x: cx, y: cy });
-      } else {
-        dropZonePositions.current.delete(id);
-      }
-    },
-    []
-  );
-
-  // Register the SVG element for coordinate conversion
-  const registerSvg = useCallback((el: SVGSVGElement | null) => {
-    svgRef.current = el;
-  }, []);
-
-  // ── Hit detection using SVG coordinate math ──
+  // ── Hit detection via elementsFromPoint ──
+  // Large invisible SVG circles with data-drop-zone-id are rendered by GitBranchTree.
+  // elementsFromPoint finds them even behind the dragged element.
   const findDropTarget = useCallback(
     (pointerX: number, pointerY: number): string | null => {
-      const svg = svgRef.current;
-      if (!svg) return null;
-
-      // Convert screen pointer position to SVG coordinate space
-      const pt = svg.createSVGPoint();
-      pt.x = pointerX;
-      pt.y = pointerY;
-      const ctm = svg.getScreenCTM();
-      if (!ctm) return null;
-      const svgPt = pt.matrixTransform(ctm.inverse());
-
-      // Check each registered drop zone position
-      const HIT_RADIUS = 40; // SVG units — generous hit area
-      let bestId: string | null = null;
-      let bestDist = Infinity;
-      for (const [id, pos] of dropZonePositions.current.entries()) {
-        const dx = svgPt.x - pos.x;
-        const dy = svgPt.y - pos.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < HIT_RADIUS && dist < bestDist) {
-          bestDist = dist;
-          bestId = id;
-        }
+      const elements = document.elementsFromPoint(pointerX, pointerY);
+      for (const el of elements) {
+        const zoneId = el.getAttribute?.("data-drop-zone-id");
+        if (zoneId) return zoneId;
       }
-      return bestId;
+      return null;
     },
     []
   );
@@ -186,8 +146,6 @@ export default function DragDropStep({
           tree={tree}
           dropZoneCommitIds={dropZoneCommitIds}
           dropZoneBranchIds={dropZoneBranchIds}
-          onDropZoneRef={registerDropZone}
-          onSvgRef={registerSvg}
         />
 
         {/* Keyboard mode: target buttons */}

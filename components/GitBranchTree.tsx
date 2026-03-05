@@ -206,12 +206,10 @@ function CommitNode({
   node,
   delay,
   highlightAsDropZone,
-  dropZoneRef,
 }: {
   node: LayoutNode;
   delay: number;
   highlightAsDropZone?: boolean;
-  dropZoneRef?: (el: HTMLElement | SVGElement | null) => void;
 }) {
   return (
     <motion.g
@@ -219,6 +217,18 @@ function CommitNode({
       animate={{ opacity: 1 }}
       transition={{ delay, duration: 0.3 }}
     >
+      {/* Large invisible hit circle for drop detection */}
+      {highlightAsDropZone && (
+        <circle
+          cx={node.x}
+          cy={node.y}
+          r={NODE_RADIUS * 4}
+          fill="transparent"
+          stroke="none"
+          data-drop-zone-id={node.commit.id}
+          pointerEvents="all"
+        />
+      )}
       {/* Drop zone highlight ring */}
       {highlightAsDropZone && (
         <circle
@@ -235,7 +245,6 @@ function CommitNode({
       )}
       {/* Node circle */}
       <circle
-        ref={dropZoneRef as React.Ref<SVGCircleElement>}
         cx={node.x}
         cy={node.y}
         r={NODE_RADIUS}
@@ -244,8 +253,6 @@ function CommitNode({
         strokeWidth={node.isPhantom ? 2 : 3}
         strokeDasharray={node.isPhantom ? "4 3" : undefined}
         opacity={node.isPhantom ? 0.6 : 1}
-        data-commit-id={node.commit.id}
-        data-branch-id={node.commit.branch}
       />
       {/* Message label */}
       {node.commit.message && (
@@ -344,16 +351,12 @@ export interface GitBranchTreeProps {
   tree: GitTreeState;
   dropZoneCommitIds?: string[];
   dropZoneBranchIds?: string[];
-  onDropZoneRef?: (id: string, el: HTMLElement | SVGElement | null) => void;
-  onSvgRef?: (el: SVGSVGElement | null) => void;
 }
 
 export default function GitBranchTree({
   tree,
   dropZoneCommitIds = [],
   dropZoneBranchIds = [],
-  onDropZoneRef,
-  onSvgRef,
 }: GitBranchTreeProps) {
   const { layoutBranches, forkLines, mergeLines, totalWidth, totalHeight } =
     computeLayout(tree);
@@ -363,7 +366,6 @@ export default function GitBranchTree({
   return (
     <div className="overflow-x-auto">
       <svg
-        ref={onSvgRef}
         viewBox={`0 0 ${totalWidth} ${totalHeight}`}
         className="w-full min-w-[300px]"
         style={{ maxHeight: "500px" }}
@@ -396,11 +398,6 @@ export default function GitBranchTree({
               node={node}
               delay={0.1 + ni * 0.08}
               highlightAsDropZone={allDropIds.includes(node.commit.id)}
-              dropZoneRef={
-                onDropZoneRef
-                  ? (el) => onDropZoneRef(node.commit.id, el)
-                  : undefined
-              }
             />
           ))
         )}
