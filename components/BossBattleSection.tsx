@@ -167,54 +167,65 @@ export default function BossBattleSection({
   const [wrongQuestions, setWrongQuestions] = useState<QuizQuestion[]>([]);
   const [actionLocked, setActionLocked] = useState(false);
   const [showHitExplosion, setShowHitExplosion] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const correctCountRef = useRef(0);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const questions = section.questions;
   const BossSprite = bossSprites[boss.sprite];
 
+  const safeTimeout = useCallback((fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms);
+    timersRef.current.push(id);
+    return id;
+  }, []);
+
+  // Clean up all timers on unmount
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach(clearTimeout);
+    };
+  }, []);
+
   // Intro sequence
   useEffect(() => {
     sfx("quiz-start-horn");
-    const t = setTimeout(() => setPhase("battle"), 2000);
+    const t = safeTimeout(() => setPhase("battle"), 2000);
     return () => clearTimeout(t);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [safeTimeout]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const advanceOrEnd = useCallback(
-    (newBossHp: number, newPlayerHp: number, wasCorrect: boolean) => {
+    (newBossHp: number, newPlayerHp: number) => {
+      const finalCorrect = correctCountRef.current;
+      const pct = Math.round((finalCorrect / questions.length) * 100);
+
       // Check win/lose
       if (newBossHp <= 0) {
         setSpriteState("dead");
         sfx("unlock-celebration");
-        setTimeout(() => {
-          const pct = Math.round(
-            ((correctCount + (wasCorrect ? 1 : 0)) / questions.length) * 100
-          );
+        safeTimeout(() => {
           setPhase("victory");
-          setTimeout(() => onComplete(pct), 1500);
+          safeTimeout(() => onComplete(pct), 1500);
         }, 1200);
         return;
       }
       if (newPlayerHp <= 0) {
-        setTimeout(() => setPhase("defeat"), 800);
+        safeTimeout(() => setPhase("defeat"), 800);
         return;
       }
       // Next question
-      setTimeout(() => {
+      safeTimeout(() => {
         setSpriteState("idle");
         if (currentQ < questions.length - 1) {
           setCurrentQ((q) => q + 1);
         } else {
           // All questions answered, boss survived — still pass with score
-          const pct = Math.round(
-            ((correctCount + (wasCorrect ? 1 : 0)) / questions.length) * 100
-          );
           setPhase("victory");
-          setTimeout(() => onComplete(pct), 1500);
+          safeTimeout(() => onComplete(pct), 1500);
         }
         setActionLocked(false);
       }, 1200);
     },
-    [currentQ, questions.length, correctCount, onComplete, sfx]
+    [currentQ, questions.length, onComplete, sfx, safeTimeout]
   );
 
   const handleAttack = useCallback(
@@ -237,21 +248,22 @@ export default function BossBattleSection({
         const newBossHp = Math.max(0, bossHp - boss.damagePerCorrect);
         setBossHp(newBossHp);
         setDamageShow(boss.damagePerCorrect);
-        setCorrectCount((c) => c + 1);
-        setTimeout(() => setShowHitExplosion(false), 500);
-        setTimeout(() => setDamageShow(null), 800);
-        advanceOrEnd(newBossHp, playerHp, true);
+        correctCountRef.current += 1;
+        setCorrectCount(correctCountRef.current);
+        safeTimeout(() => setShowHitExplosion(false), 500);
+        safeTimeout(() => setDamageShow(null), 800);
+        advanceOrEnd(newBossHp, playerHp);
       } else {
         // Fizzle → boss counterattack
         sfx("wrong-buzz");
-        setTimeout(() => {
+        safeTimeout(() => {
           setSpriteState("attacking");
           setShaking(true);
           const newPlayerHp = playerHp - 1;
           setPlayerHp(newPlayerHp);
           setWrongQuestions((prev) => [...prev, question]);
-          setTimeout(() => setShaking(false), 300);
-          advanceOrEnd(bossHp, newPlayerHp, false);
+          safeTimeout(() => setShaking(false), 300);
+          advanceOrEnd(bossHp, newPlayerHp);
         }, 400);
       }
     },
@@ -265,6 +277,7 @@ export default function BossBattleSection({
       boss.damagePerCorrect,
       sfx,
       advanceOrEnd,
+      safeTimeout,
     ]
   );
 
@@ -428,7 +441,6 @@ export default function BossBattleSection({
 
   return (
     <div
-      ref={containerRef}
       className={`w-full max-w-3xl mx-auto ${shaking ? "screen-shake" : ""}`}
     >
       {/* Boss area */}
