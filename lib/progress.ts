@@ -16,13 +16,15 @@ const DEFAULT_PROFILE: PlayerProfile = {
 };
 
 export function getProfile(): PlayerProfile {
-  if (typeof window === "undefined") return DEFAULT_PROFILE;
+  if (typeof window === "undefined") return { ...DEFAULT_PROFILE, lessons: {} };
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return DEFAULT_PROFILE;
+  if (!raw) return { ...DEFAULT_PROFILE, lessons: {} };
   try {
     return JSON.parse(raw) as PlayerProfile;
-  } catch {
-    return DEFAULT_PROFILE;
+  } catch (err) {
+    console.warn("[kidkode] Corrupted progress data, backing up and resetting.", err instanceof Error ? err.message : err);
+    localStorage.setItem(`${STORAGE_KEY}_backup_${Date.now()}`, raw);
+    return { ...DEFAULT_PROFILE, lessons: {} };
   }
 }
 
@@ -45,7 +47,8 @@ export function hasCustomName(): boolean {
   try {
     const profile = JSON.parse(raw) as PlayerProfile;
     return profile.name !== DEFAULT_PROFILE.name && profile.name.trim().length > 0;
-  } catch {
+  } catch (err) {
+    console.warn("[kidkode] Failed to parse progress in hasCustomName.", err instanceof Error ? err.message : err);
     return false;
   }
 }

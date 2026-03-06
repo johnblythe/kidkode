@@ -2,10 +2,10 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { InteractiveSection, InteractiveStep } from "@/lib/types";
-import type { DragDropScenarioStep } from "@/lib/git-branch-types";
+import type { InteractiveSection, InteractiveStep, SequenceInteractiveStep, MultipleChoiceInteractiveStep } from "@/lib/types";
 import DragDropStep from "@/components/DragDropStep";
 import { useAudio } from "@/lib/audio/AudioContext";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 interface InteractiveExerciseProps {
   section: InteractiveSection;
@@ -24,11 +24,11 @@ function SequenceStep({
   step,
   onStepComplete,
 }: {
-  step: InteractiveStep;
+  step: SequenceInteractiveStep;
   onStepComplete: () => void;
 }) {
   const { sfx } = useAudio();
-  const data = step.data as { items: SequenceItem[]; correctOrder: string[] };
+  const data = step.data;
   const [placed, setPlaced] = useState<SequenceItem[]>([]);
   const [remaining, setRemaining] = useState<SequenceItem[]>(() =>
     // Shuffle the items
@@ -211,12 +211,12 @@ function MultipleChoiceStep({
   step,
   onStepComplete,
 }: {
-  step: InteractiveStep;
+  step: MultipleChoiceInteractiveStep;
   onStepComplete: () => void;
 }) {
   const { sfx } = useAudio();
-  const data = step.data as { options: string[] };
-  const correctIndex = step.solution as number;
+  const data = step.data;
+  const correctIndex = step.solution;
   const [selected, setSelected] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -355,12 +355,38 @@ function MultipleChoiceStep({
   );
 }
 
+// ---------- Step Renderer ----------
+
+function renderStep(step: InteractiveStep, onStepComplete: () => void) {
+  switch (step.type) {
+    case "sequence":
+      return <SequenceStep step={step} onStepComplete={onStepComplete} />;
+    case "multiple-choice":
+      return <MultipleChoiceStep step={step} onStepComplete={onStepComplete} />;
+    case "drag-drop":
+      return <DragDropStep scenario={step.data} onStepComplete={onStepComplete} />;
+    default:
+      return (
+        <div>
+          <p className="text-slate-200 mb-4">{step.instruction}</p>
+          <button
+            onClick={onStepComplete}
+            className="px-6 py-2.5 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg"
+          >
+            Continue
+          </button>
+        </div>
+      );
+  }
+}
+
 // ---------- Main Component ----------
 
 export default function InteractiveExercise({
   section,
   onComplete,
 }: InteractiveExerciseProps) {
+  const reducedMotion = useReducedMotion();
   const [currentStep, setCurrentStep] = useState(0);
   const steps = section.steps;
   const step = steps[currentStep];
@@ -407,44 +433,24 @@ export default function InteractiveExercise({
       </div>
 
       {/* Step content */}
-      <div className="rpg-card p-8 glow-gold">
+      <motion.div
+        className="rpg-card p-8 glow-gold"
+        initial={reducedMotion ? undefined : { scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={reducedMotion ? undefined : { type: "spring", stiffness: 200, damping: 20 }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30 }}
+            initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 30 }}
+            animate={reducedMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -30 }}
             transition={{ duration: 0.3 }}
           >
-            {step.type === "sequence" && (
-              <SequenceStep step={step} onStepComplete={handleStepComplete} />
-            )}
-            {step.type === "multiple-choice" && (
-              <MultipleChoiceStep step={step} onStepComplete={handleStepComplete} />
-            )}
-            {step.type === "drag-drop" && (
-              <DragDropStep
-                scenario={step.data as unknown as DragDropScenarioStep}
-                onStepComplete={handleStepComplete}
-              />
-            )}
-            {/* Fallback for unhandled types */}
-            {step.type !== "sequence" && step.type !== "multiple-choice" && step.type !== "drag-drop" && (
-              <div>
-                <p className="text-slate-200 mb-4">{step.instruction}</p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleStepComplete}
-                  className="px-6 py-2.5 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg"
-                >
-                  Continue
-                </motion.button>
-              </div>
-            )}
+            {renderStep(step, handleStepComplete)}
           </motion.div>
         </AnimatePresence>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }

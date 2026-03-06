@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import type { ReadingSection as ReadingSectionType } from "@/lib/types";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
+import { inlineFormat } from "@/lib/markdown-utils";
 
 interface ReadingSectionProps {
   section: ReadingSectionType;
@@ -13,7 +15,7 @@ interface ReadingSectionProps {
  * Simple markdown-to-JSX renderer. Handles:
  * ## headers, **bold**, `code`, tables, - lists, numbered lists, blank lines
  */
-function renderMarkdown(md: string): React.ReactNode {
+function renderMarkdown(md: string): React.ReactNode[] {
   const lines = md.split("\n");
   const elements: React.ReactNode[] = [];
   let i = 0;
@@ -126,31 +128,6 @@ function renderMarkdown(md: string): React.ReactNode {
   return elements;
 }
 
-function inlineFormat(text: string): React.ReactNode {
-  // Handle bold, code, and plain text
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return (
-        <strong key={i} className="text-gold-bright font-bold">
-          {part.slice(2, -2)}
-        </strong>
-      );
-    }
-    if (part.startsWith("`") && part.endsWith("`")) {
-      return (
-        <code
-          key={i}
-          className="bg-void text-xp-purple-bright px-1.5 py-0.5 rounded text-sm font-mono border border-xp-purple-dim/30"
-        >
-          {part.slice(1, -1)}
-        </code>
-      );
-    }
-    return <span key={i}>{part}</span>;
-  });
-}
-
 function renderTable(tableLines: string[], keyBase: number): React.ReactNode {
   const parseRow = (line: string) =>
     line
@@ -198,9 +175,28 @@ function renderTable(tableLines: string[], keyBase: number): React.ReactNode {
   );
 }
 
+function RevealBlock({ children, index, reducedMotion }: { children: React.ReactNode; index: number; reducedMotion: boolean }) {
+  if (reducedMotion) return <>{children}</>;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.4, delay: index * 0.05 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export default function ReadingSection({ section, onComplete }: ReadingSectionProps) {
+  const reducedMotion = useReducedMotion();
   const [scrollProgress, setScrollProgress] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
+  const renderedContent = useMemo(
+    () => renderMarkdown(section.content),
+    [section.content]
+  );
 
   useEffect(() => {
     const el = contentRef.current;
@@ -255,7 +251,11 @@ export default function ReadingSection({ section, onComplete }: ReadingSectionPr
             "0 0 15px rgba(251, 191, 36, 0.1), inset 0 0 30px rgba(0,0,0,0.3)",
         }}
       >
-        {renderMarkdown(section.content)}
+        {renderedContent.map((block, i) => (
+          <RevealBlock key={i} index={i} reducedMotion={reducedMotion}>
+            {block}
+          </RevealBlock>
+        ))}
       </div>
 
       {/* Complete button */}

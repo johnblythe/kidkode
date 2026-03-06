@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getProfile, saveProfile } from "@/lib/progress";
 import { useAudio } from "@/lib/audio/AudioContext";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
+import CanvasParticles from "@/components/CanvasParticles";
 
 const MAX_NAME_LENGTH = 20;
 
@@ -17,54 +19,7 @@ const CHARACTER_CLASSES = [
   { emoji: "\u{1F9DC}", label: "Merfolk" },
 ];
 
-interface StarParticle {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-  delay: number;
-  duration: number;
-}
-
-function Star({ particle }: { particle: StarParticle }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0 }}
-      animate={{
-        opacity: [0, 1, 0.6, 1, 0],
-        scale: [0, 1, 0.8, 1.2, 0],
-      }}
-      transition={{
-        duration: particle.duration,
-        delay: particle.delay,
-        repeat: Infinity,
-        repeatDelay: Math.random() * 3 + 1,
-      }}
-      className="absolute rounded-full"
-      style={{
-        left: `${particle.x}%`,
-        top: `${particle.y}%`,
-        width: particle.size,
-        height: particle.size,
-        background: "radial-gradient(circle, rgba(251,191,36,0.9), rgba(168,85,247,0.3), transparent)",
-        boxShadow: `0 0 ${particle.size * 2}px rgba(251,191,36,0.4)`,
-      }}
-    />
-  );
-}
-
 function SubmitFlourish({ onComplete }: { onComplete: () => void }) {
-  const [particles] = useState(() =>
-    Array.from({ length: 40 }, (_, i) => ({
-      id: i,
-      angle: (i / 40) * Math.PI * 2,
-      distance: 80 + Math.sin(i * 1.7) * 60,
-      size: 3 + (i % 3) * 2,
-      delay: (i * 0.02),
-      color: i % 3 === 0 ? "#fbbf24" : i % 3 === 1 ? "#a855f7" : "#22c55e",
-    }))
-  );
-
   useEffect(() => {
     const timer = setTimeout(onComplete, 1800);
     return () => clearTimeout(timer);
@@ -96,27 +51,10 @@ function SubmitFlourish({ onComplete }: { onComplete: () => void }) {
         className="absolute w-32 h-32 rounded-full border-2 border-gold"
       />
 
-      {/* Burst particles */}
-      {particles.map((p) => (
-        <motion.div
-          key={p.id}
-          initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-          animate={{
-            x: Math.cos(p.angle) * p.distance,
-            y: Math.sin(p.angle) * p.distance,
-            opacity: 0,
-            scale: 0,
-          }}
-          transition={{ duration: 1, delay: p.delay, ease: "easeOut" }}
-          className="absolute rounded-full"
-          style={{
-            width: p.size,
-            height: p.size,
-            backgroundColor: p.color,
-            boxShadow: `0 0 ${p.size * 3}px ${p.color}`,
-          }}
-        />
-      ))}
+      {/* Canvas confetti burst (replaces 40 framer-motion divs) */}
+      <div className="absolute inset-0">
+        <CanvasParticles effect="confetti" count={40} />
+      </div>
 
       {/* "Quest Begins!" text */}
       <motion.div
@@ -133,28 +71,38 @@ function SubmitFlourish({ onComplete }: { onComplete: () => void }) {
   );
 }
 
+function FadeComplete({ onComplete }: { onComplete: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 800);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <h2 className="text-3xl sm:text-4xl font-[family-name:var(--font-pixel)] text-gold text-glow-gold">
+        Quest Begins!
+      </h2>
+    </motion.div>
+  );
+}
+
 interface HeroNameSetupProps {
   onComplete: () => void;
 }
 
 export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
   const { sfx } = useAudio();
+  const reducedMotion = useReducedMotion();
   const [name, setName] = useState("");
   const [selectedClass, setSelectedClass] = useState(0);
   const [phase, setPhase] = useState<"intro" | "input" | "flourish">("intro");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Deterministic star field
-  const [stars] = useState<StarParticle[]>(() =>
-    Array.from({ length: 50 }, (_, i) => ({
-      id: i,
-      x: ((i * 37 + 13) % 100),
-      y: ((i * 23 + 7) % 100),
-      size: 2 + (i % 3),
-      delay: (i * 0.15) % 4,
-      duration: 2 + (i % 3),
-    }))
-  );
 
   // Transition from intro to input
   useEffect(() => {
@@ -199,11 +147,9 @@ export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-void">
-      {/* Star field background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {stars.map((star) => (
-          <Star key={star.id} particle={star} />
-        ))}
+      {/* Canvas star field (replaces 50 framer-motion divs) */}
+      <div className="absolute inset-0">
+        <CanvasParticles effect="stars" count={50} loop />
       </div>
 
       {/* Ambient glow */}
@@ -408,7 +354,9 @@ export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
         {/* Flourish overlay */}
         <AnimatePresence>
           {phase === "flourish" && (
-            <SubmitFlourish onComplete={onComplete} />
+            reducedMotion
+              ? <FadeComplete onComplete={onComplete} />
+              : <SubmitFlourish onComplete={onComplete} />
           )}
         </AnimatePresence>
       </div>

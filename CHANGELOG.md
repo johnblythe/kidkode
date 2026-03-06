@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.5.0] - 2026-03-05
+
+### Added
+- Canvas particle system replacing 120+ framer-motion particle divs (#12)
+- `useCanvas` hook for reusable canvas-based animations (#12)
+- `useReducedMotion` hook with prefers-reduced-motion support across all animated components (#12)
+- Swoosh and page-flip slide transition types (#12)
+- Scroll-triggered reading reveals with IntersectionObserver (#12)
+- Dashboard torch flame effect on quest nodes (#12)
+- Canvas particles and slide transitions playground pages (#12)
+
+### Changed
+- Replaced framer-motion drag with @dnd-kit/core for drag-drop exercises (#12)
+- Extracted shared `animationVariants` to `lib/slide-variants.ts` — removes duplication between SlideViewer and playground (#12)
+- Extracted shared `inlineFormat` to `lib/markdown-utils.tsx` — removes duplication between SlideViewer and ReadingSection (#12)
+- Refactored `InteractiveStep` to discriminated union — eliminates unsafe `as unknown as` casts (#12)
+- Memoized `renderMarkdown` in ReadingSection to avoid re-parsing on scroll (#12)
+
+### Fixed
+- Canvas resize DPR bug — simplified to skip DPR scaling (#12)
+- `cancelAnimationFrame` cleanup missing in UnlockScreen XPCounter (#12)
+- `DEFAULT_PROFILE` singleton mutation in `lib/progress.ts` — fallback returns now spread (#12)
+- Unsafe `as number` cast and fragile string ID parsing in DragDropStep — replaced with type guards (#12)
+- `resolveColor` fallthrough passing raw strings to inline styles — added hex validation (#12)
+- Removed dead `initialized` state guard in CanvasParticles (#12)
+
 ## [0.4.0] - 2026-03-04
 
 ### Added

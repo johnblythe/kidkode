@@ -187,8 +187,9 @@ function LessonNode({
     );
   } else if (isAvailable || isInProgress) {
     statusIcon = (
-      <div className="w-8 h-8 rounded-full bg-gold/20 border border-gold flex items-center justify-center text-lg">
+      <div className="w-8 h-8 rounded-full bg-gold/20 border border-gold flex items-center justify-center text-lg relative">
         {lesson.icon}
+        <span className="torch-flame absolute -top-1 -right-1 text-[10px]">🔥</span>
       </div>
     );
   } else {
