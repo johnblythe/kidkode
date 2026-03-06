@@ -1,8 +1,10 @@
 import gitSavePoints from "./01-git-save-points";
+import gitBranches from "./02-git-branches";
 import { Lesson } from "@/lib/types";
 
 export const lessons: Lesson[] = [
   gitSavePoints,
+  gitBranches,
 ];
 
 export function getLessonBySlug(slug: string): Lesson | undefined {

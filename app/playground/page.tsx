@@ -11,6 +11,27 @@ const playgrounds = [
     icon: "🐉",
     color: "fire-red",
   },
+  {
+    title: "Branch Tree",
+    description: "SVG git branch tree visualization with commits, forks, and merges",
+    href: "/playground/branch-tree",
+    icon: "🌿",
+    color: "mana-blue",
+  },
+  {
+    title: "Canvas Particles",
+    description: "Test confetti, sparkle, and star effects with adjustable count and loop",
+    href: "/playground/particles",
+    icon: "✨",
+    color: "gold",
+  },
+  {
+    title: "Slide Transitions",
+    description: "All 7 slide transition types side-by-side: fade, slide, pop, swoosh, page-flip",
+    href: "/playground/transitions",
+    icon: "🎬",
+    color: "xp-purple",
+  },
 ];
 
 export default function PlaygroundIndex() {

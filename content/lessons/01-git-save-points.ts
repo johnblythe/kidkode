@@ -153,7 +153,6 @@ Without Git, if the AI breaks something, you're stuck trying to remember what yo
             correctOrder: ["test", "add", "commit", "push"],
           },
           hint: "Think about it: would you save before or after checking that things work?",
-          solution: ["test", "add", "commit", "push"],
         },
         {
           instruction: "Which commit message is better for adding a dark mode toggle?",
