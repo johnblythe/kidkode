@@ -16,13 +16,13 @@ const DEFAULT_PROFILE: PlayerProfile = {
 };
 
 export function getProfile(): PlayerProfile {
-  if (typeof window === "undefined") return DEFAULT_PROFILE;
+  if (typeof window === "undefined") return { ...DEFAULT_PROFILE, lessons: {} };
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return DEFAULT_PROFILE;
+  if (!raw) return { ...DEFAULT_PROFILE, lessons: {} };
   try {
     return JSON.parse(raw) as PlayerProfile;
   } catch {
-    return DEFAULT_PROFILE;
+    return { ...DEFAULT_PROFILE, lessons: {} };
   }
 }
 

@@ -37,7 +37,7 @@ export default function DragDropStep({
   const [showHint, setShowHint] = useState(false);
   const [showConflict, setShowConflict] = useState(false);
   const [conflictResolved, setConflictResolved] = useState(false);
-  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const [activeDragIndex, setActiveDragIndex] = useState<number | null>(null);
   const [placedItems, setPlacedItems] = useState<Set<number>>(new Set());
 
   // SVG measurement for positioning overlays
@@ -189,18 +189,19 @@ export default function DragDropStep({
 
   // ── DnD event handlers ──
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveDragId(String(event.active.id));
+    const index = event.active.data.current?.index;
+    setActiveDragIndex(typeof index === "number" ? index : null);
   }, []);
 
   const handleDragEnd = useCallback(
     (event: DragEndEvent) => {
-      setActiveDragId(null);
+      setActiveDragIndex(null);
       const { active, over } = event;
       if (!over) return;
 
-      const itemIndex = active.data.current?.index as number;
-      const targetId = String(over.id);
-      validateAction(itemIndex, targetId);
+      const itemIndex = active.data.current?.index;
+      if (typeof itemIndex !== "number") return;
+      validateAction(itemIndex, String(over.id));
     },
     [validateAction]
   );
@@ -215,8 +216,8 @@ export default function DragDropStep({
     setTimeout(onStepComplete, 1500);
   }, [scenario.resultTree, sfx, onStepComplete]);
 
-  const activeItem = activeDragId
-    ? scenario.availableItems[Number(activeDragId.replace("palette-", ""))]
+  const activeItem = activeDragIndex !== null
+    ? scenario.availableItems[activeDragIndex]
     : null;
 
   return (

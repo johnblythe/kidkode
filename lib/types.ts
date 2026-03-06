@@ -22,13 +22,53 @@ export interface ReadingSection {
   estimatedMinutes: number;
 }
 
-export interface InteractiveStep {
+// Discriminated union for InteractiveStep — each type carries properly typed data
+import type { DragDropScenarioStep } from "./git-branch-types";
+
+interface InteractiveStepBase {
   instruction: string;
-  type: "drag-drop" | "type-command" | "multiple-choice" | "fill-blank" | "sequence";
-  data: Record<string, unknown>;
   hint?: string;
+}
+
+export interface DragDropInteractiveStep extends InteractiveStepBase {
+  type: "drag-drop";
+  data: DragDropScenarioStep;
+  solution?: unknown;
+}
+
+export interface SequenceInteractiveStep extends InteractiveStepBase {
+  type: "sequence";
+  data: {
+    items: Array<{ id: string; text: string; description: string }>;
+    correctOrder: string[];
+  };
+  solution?: unknown;
+}
+
+export interface MultipleChoiceInteractiveStep extends InteractiveStepBase {
+  type: "multiple-choice";
+  data: { options: string[] };
+  solution: number;
+}
+
+export interface TypeCommandInteractiveStep extends InteractiveStepBase {
+  type: "type-command";
+  data: Record<string, unknown>;
   solution: unknown;
 }
+
+export interface FillBlankInteractiveStep extends InteractiveStepBase {
+  type: "fill-blank";
+  data: Record<string, unknown>;
+  solution: unknown;
+}
+
+export type InteractiveStep =
+  | DragDropInteractiveStep
+  | SequenceInteractiveStep
+  | MultipleChoiceInteractiveStep
+  | TypeCommandInteractiveStep
+  | FillBlankInteractiveStep;
 
 export interface InteractiveSection {
   type: "interactive";

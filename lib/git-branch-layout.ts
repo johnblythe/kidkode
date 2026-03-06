@@ -20,8 +20,13 @@ export const COLOR_MAP: Record<string, string> = {
   "xp-purple": "#a855f7",
 };
 
+const HEX_COLOR_RE = /^#(?:[0-9a-fA-F]{3,4}){1,2}$/;
+
 export function resolveColor(token: string): string {
-  return COLOR_MAP[token] ?? token;
+  const mapped = COLOR_MAP[token];
+  if (mapped) return mapped;
+  // Only pass through valid hex colors; fallback to gold for unknown tokens
+  return HEX_COLOR_RE.test(token) ? token : COLOR_MAP.gold;
 }
 
 // ── Layout types ──

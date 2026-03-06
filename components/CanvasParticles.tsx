@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { useCanvas } from "@/lib/hooks/useCanvas";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
@@ -184,7 +184,6 @@ export default function CanvasParticles({
 }: CanvasParticlesProps) {
   const reducedMotion = useReducedMotion();
   const particlesRef = useRef<Particle[]>([]);
-  const [initialized, setInitialized] = useState(false);
 
   const initParticles = useCallback((canvas: HTMLCanvasElement) => {
     const w = canvas.width;
@@ -213,7 +212,7 @@ export default function CanvasParticles({
     }
   }, [effect, loop]);
 
-  const canvasRef = useCanvas({ onFrame, loop: true });
+  const canvasRef = useCanvas({ onFrame, loop });
 
   // Size the canvas to match container
   useEffect(() => {
@@ -222,25 +221,16 @@ export default function CanvasParticles({
 
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      const ctx = canvas.getContext("2d");
-      if (ctx) ctx.scale(dpr, dpr);
-      // Reinit particles on resize
       canvas.width = rect.width;
       canvas.height = rect.height;
+      initParticles(canvas);
     };
 
     resize();
-    if (!initialized) {
-      initParticles(canvas);
-      setInitialized(true);
-    }
 
     window.addEventListener("resize", resize);
     return () => window.removeEventListener("resize", resize);
-  }, [canvasRef, initParticles, initialized]);
+  }, [canvasRef, initParticles]);
 
   if (reducedMotion) return null;
 

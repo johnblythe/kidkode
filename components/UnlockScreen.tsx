@@ -17,18 +17,19 @@ function XPCounter({ target, duration = 2000 }: { target: number; duration?: num
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    let rafId: number;
     const startTime = Date.now();
     const step = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       setCount(Math.round(eased * target));
       if (progress < 1) {
-        requestAnimationFrame(step);
+        rafId = requestAnimationFrame(step);
       }
     };
-    requestAnimationFrame(step);
+    rafId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafId);
   }, [target, duration]);
 
   return <span>{count}</span>;

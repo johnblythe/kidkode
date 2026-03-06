@@ -2,8 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { InteractiveSection, InteractiveStep } from "@/lib/types";
-import type { DragDropScenarioStep } from "@/lib/git-branch-types";
+import type { InteractiveSection, InteractiveStep, SequenceInteractiveStep, MultipleChoiceInteractiveStep } from "@/lib/types";
 import DragDropStep from "@/components/DragDropStep";
 import { useAudio } from "@/lib/audio/AudioContext";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
@@ -25,11 +24,11 @@ function SequenceStep({
   step,
   onStepComplete,
 }: {
-  step: InteractiveStep;
+  step: SequenceInteractiveStep;
   onStepComplete: () => void;
 }) {
   const { sfx } = useAudio();
-  const data = step.data as { items: SequenceItem[]; correctOrder: string[] };
+  const data = step.data;
   const [placed, setPlaced] = useState<SequenceItem[]>([]);
   const [remaining, setRemaining] = useState<SequenceItem[]>(() =>
     // Shuffle the items
@@ -212,12 +211,12 @@ function MultipleChoiceStep({
   step,
   onStepComplete,
 }: {
-  step: InteractiveStep;
+  step: MultipleChoiceInteractiveStep;
   onStepComplete: () => void;
 }) {
   const { sfx } = useAudio();
-  const data = step.data as { options: string[] };
-  const correctIndex = step.solution as number;
+  const data = step.data;
+  const correctIndex = step.solution;
   const [selected, setSelected] = useState<number | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -431,7 +430,7 @@ export default function InteractiveExercise({
             )}
             {step.type === "drag-drop" && (
               <DragDropStep
-                scenario={step.data as unknown as DragDropScenarioStep}
+                scenario={step.data}
                 onStepComplete={handleStepComplete}
               />
             )}
