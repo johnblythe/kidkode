@@ -5,36 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useAudio } from "@/lib/audio/AudioContext";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
+import CanvasParticles from "@/components/CanvasParticles";
 
 interface UnlockScreenProps {
   xpEarned: number;
   newLevel: number;
   streak: number;
-}
-
-function Particle({ delay, x, y, index }: { delay: number; x: number; y: number; index: number }) {
-  const color = index % 2 === 0 ? "#fbbf24" : "#a855f7";
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
-      animate={{
-        opacity: [0, 1, 1, 0],
-        scale: [0, 1.5, 1, 0],
-        x: [0, x * 0.5, x],
-        y: [0, y * 0.5 - 50, y],
-      }}
-      transition={{
-        duration: 2.5,
-        delay,
-        ease: "easeOut",
-      }}
-      className="absolute w-2 h-2 rounded-full"
-      style={{
-        background: `radial-gradient(circle, ${color}, transparent)`,
-        boxShadow: `0 0 6px ${color}`,
-      }}
-    />
-  );
 }
 
 function XPCounter({ target, duration = 2000 }: { target: number; duration?: number }) {
@@ -65,16 +41,6 @@ export default function UnlockScreen({ xpEarned, newLevel, streak }: UnlockScree
   const [showStats, setShowStats] = useState(false);
   const [showButton, setShowButton] = useState(false);
 
-  // Generate particles (seeded to avoid hydration mismatch)
-  const [particles] = useState(() =>
-    Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      delay: (i * 0.05) % 1.5,
-      x: (Math.sin(i * 2.4) * 250),
-      y: (Math.cos(i * 1.7) * 200),
-    }))
-  );
-
   useEffect(() => {
     sfx("unlock-celebration");
     playBGM("victory");
@@ -102,14 +68,10 @@ export default function UnlockScreen({ xpEarned, newLevel, streak }: UnlockScree
         }}
       />
 
-      {/* Particles */}
-      {!reducedMotion && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          {particles.map((p) => (
-            <Particle key={p.id} delay={p.delay} x={p.x} y={p.y} index={p.id} />
-          ))}
-        </div>
-      )}
+      {/* Canvas confetti particles (replaces 30 framer-motion divs) */}
+      <div className="absolute inset-0">
+        <CanvasParticles effect="confetti" count={120} trigger="mount" />
+      </div>
 
       {/* Radial rings */}
       <motion.div
