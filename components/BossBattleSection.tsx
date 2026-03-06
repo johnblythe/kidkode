@@ -6,6 +6,7 @@ import type { QuizSection, BossData, QuizQuestion } from "@/lib/types";
 import { bossSprites, type BossSpriteState } from "@/components/bosses";
 import { useAudio } from "@/lib/audio/AudioContext";
 import { resolveCorrectIndex } from "@/lib/quiz-utils";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 interface BossBattleProps {
   section: QuizSection;
@@ -155,6 +156,7 @@ export default function BossBattleSection({
   onStudyUp,
 }: BossBattleProps) {
   const { sfx } = useAudio();
+  const reducedMotion = useReducedMotion();
   const [phase, setPhase] = useState<Phase>("intro");
   const [bossHp, setBossHp] = useState(boss.maxHp);
   const [playerHp, setPlayerHp] = useState(boss.playerMaxHp);
@@ -465,7 +467,7 @@ export default function BossBattleSection({
           {BossSprite ? <BossSprite state={spriteState} /> : <div className="w-48 h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
           {/* Hit explosion */}
           <AnimatePresence>
-            {showHitExplosion && <HitExplosion key="hit-explosion" />}
+            {showHitExplosion && !reducedMotion && <HitExplosion key="hit-explosion" />}
           </AnimatePresence>
           {/* Damage number */}
           <AnimatePresence>

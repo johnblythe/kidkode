@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getProfile, saveProfile } from "@/lib/progress";
 import { useAudio } from "@/lib/audio/AudioContext";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 const MAX_NAME_LENGTH = 20;
 
@@ -133,12 +134,34 @@ function SubmitFlourish({ onComplete }: { onComplete: () => void }) {
   );
 }
 
+function FadeComplete({ onComplete }: { onComplete: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onComplete, 800);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.4 }}
+    >
+      <h2 className="text-3xl sm:text-4xl font-[family-name:var(--font-pixel)] text-gold text-glow-gold">
+        Quest Begins!
+      </h2>
+    </motion.div>
+  );
+}
+
 interface HeroNameSetupProps {
   onComplete: () => void;
 }
 
 export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
   const { sfx } = useAudio();
+  const reducedMotion = useReducedMotion();
   const [name, setName] = useState("");
   const [selectedClass, setSelectedClass] = useState(0);
   const [phase, setPhase] = useState<"intro" | "input" | "flourish">("intro");
@@ -200,11 +223,13 @@ export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-void">
       {/* Star field background */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {stars.map((star) => (
-          <Star key={star.id} particle={star} />
-        ))}
-      </div>
+      {!reducedMotion && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {stars.map((star) => (
+            <Star key={star.id} particle={star} />
+          ))}
+        </div>
+      )}
 
       {/* Ambient glow */}
       <motion.div
@@ -408,7 +433,9 @@ export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
         {/* Flourish overlay */}
         <AnimatePresence>
           {phase === "flourish" && (
-            <SubmitFlourish onComplete={onComplete} />
+            reducedMotion
+              ? <FadeComplete onComplete={onComplete} />
+              : <SubmitFlourish onComplete={onComplete} />
           )}
         </AnimatePresence>
       </div>

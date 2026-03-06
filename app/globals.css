@@ -370,4 +370,24 @@ body {
   border-radius: 6px;
 }
 
+/* ============================================
+   Reduced Motion
+   ============================================ */
 
+@media (prefers-reduced-motion: reduce) {
+  .boss-idle,
+  .boss-damaged,
+  .boss-attacking,
+  .float,
+  .pulse-available,
+  .streak-fire,
+  .float-up-damage,
+  .screen-shake,
+  .hit-flash {
+    animation: none !important;
+  }
+
+  .xp-bar-fill::after {
+    animation: none !important;
+  }
+}

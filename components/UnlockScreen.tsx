@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useAudio } from "@/lib/audio/AudioContext";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 interface UnlockScreenProps {
   xpEarned: number;
@@ -59,6 +60,7 @@ function XPCounter({ target, duration = 2000 }: { target: number; duration?: num
 
 export default function UnlockScreen({ xpEarned, newLevel, streak }: UnlockScreenProps) {
   const { sfx, playBGM } = useAudio();
+  const reducedMotion = useReducedMotion();
   const [showContent, setShowContent] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showButton, setShowButton] = useState(false);
@@ -101,11 +103,13 @@ export default function UnlockScreen({ xpEarned, newLevel, streak }: UnlockScree
       />
 
       {/* Particles */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        {particles.map((p) => (
-          <Particle key={p.id} delay={p.delay} x={p.x} y={p.y} index={p.id} />
-        ))}
-      </div>
+      {!reducedMotion && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {particles.map((p) => (
+            <Particle key={p.id} delay={p.delay} x={p.x} y={p.y} index={p.id} />
+          ))}
+        </div>
+      )}
 
       {/* Radial rings */}
       <motion.div
