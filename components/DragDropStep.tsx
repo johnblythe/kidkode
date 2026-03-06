@@ -228,11 +228,11 @@ export default function DragDropStep({
       onDragEnd={handleDragEnd}
     >
       <div>
-        <p className="text-lg text-slate-200 mb-4">{scenario.instruction}</p>
+        <p className="text-base sm:text-lg text-slate-200 mb-3 sm:mb-4">{scenario.instruction}</p>
 
         {/* Branch Tree + drop zone overlays */}
         <div
-          className="mb-6 rpg-card p-4 bg-void/50"
+          className="mb-4 sm:mb-6 rpg-card p-3 sm:p-4 bg-void/50"
           style={{ touchAction: "none" }}
         >
           <div ref={containerRef} className="relative overflow-x-auto">
@@ -264,7 +264,7 @@ export default function DragDropStep({
             <p className="text-sm text-gold-dim mb-2 uppercase tracking-wider font-bold">
               Drag to the tree:
             </p>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {scenario.availableItems.map(
                 (item, idx) =>
                   !placedItems.has(idx) && (
@@ -354,9 +354,9 @@ export default function DragDropStep({
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="rpg-card p-8 max-w-lg w-full glow-purple"
+                className="rpg-card p-4 sm:p-6 max-w-lg w-full glow-purple"
               >
-                <h3 className="text-xl font-black text-fire-red mb-2">
+                <h3 className="text-lg sm:text-xl font-black text-fire-red mb-2">
                   Merge Conflict!
                 </h3>
                 <p className="text-slate-300 text-sm mb-6">

@@ -78,7 +78,7 @@ function PlayerHeader({ profile }: { profile: PlayerProfile }) {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3 mt-4 pt-4 border-t border-xp-purple-dim/20">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-xp-purple-dim/20">
         <StatBox
           label="Quests Done"
           value={profile.totalLessonsCompleted}
@@ -272,7 +272,7 @@ function LessonNode({
             </p>
 
             {/* Meta: XP + time */}
-            <div className="flex items-center gap-4 mt-2 text-xs">
+            <div className="flex items-center gap-2 sm:gap-4 mt-2 text-xs flex-wrap">
               <span
                 className={`flex items-center gap-1 ${
                   isLocked ? "text-locked-text/40" : "text-xp-purple-bright"
@@ -476,7 +476,7 @@ export default function DashboardPage() {
         className="mt-12 text-center text-xs text-locked-text"
       >
         <div className="h-px bg-gradient-to-r from-transparent via-xp-purple-dim/30 to-transparent mb-4" />
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
           <span>More quests coming soon... ⚔️</span>
           <button
             onClick={() => {

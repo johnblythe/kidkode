@@ -71,14 +71,14 @@ function SequenceStep({
 
   return (
     <div>
-      <p className="text-lg text-slate-200 mb-6">{step.instruction}</p>
+      <p className="text-base sm:text-lg text-slate-200 mb-4 sm:mb-6">{step.instruction}</p>
 
       {/* Placed area */}
-      <div className="mb-6">
+      <div className="mb-4 sm:mb-6">
         <p className="text-sm text-gold-dim mb-2 uppercase tracking-wider font-bold">
           Your Order:
         </p>
-        <div className="min-h-[60px] rounded-lg border-2 border-dashed border-gold-dim/30 p-3 flex flex-wrap gap-2 bg-void/50">
+        <div className="min-h-[60px] rounded-lg border-2 border-dashed border-gold-dim/30 p-2 sm:p-3 flex flex-wrap gap-2 bg-void/50">
           <AnimatePresence>
             {placed.length === 0 && (
               <motion.p
@@ -98,7 +98,7 @@ function SequenceStep({
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.8 }}
                 onClick={() => removeItem(item)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border font-mono text-sm transition-colors cursor-pointer ${
+                className={`flex items-center gap-2 px-2 py-1.5 sm:px-4 sm:py-2 rounded-lg border font-mono text-xs sm:text-sm transition-colors cursor-pointer ${
                   result === "correct"
                     ? "bg-hp-green/10 border-hp-green/50 text-hp-green-bright"
                     : result === "wrong"
@@ -127,7 +127,7 @@ function SequenceStep({
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 onClick={() => selectItem(item)}
-                className="rpg-card px-4 py-3 cursor-pointer hover:border-gold transition-colors text-left"
+                className="rpg-card px-3 py-2 sm:px-4 sm:py-3 cursor-pointer hover:border-gold transition-colors text-left"
               >
                 <p className="font-mono text-sm text-slate-200">{item.text}</p>
                 <p className="text-xs text-slate-400 mt-1">{item.description}</p>
@@ -239,11 +239,11 @@ function MultipleChoiceStep({
 
   return (
     <div>
-      <p className="text-lg text-slate-200 mb-6">{step.instruction}</p>
+      <p className="text-base sm:text-lg text-slate-200 mb-4 sm:mb-6">{step.instruction}</p>
 
-      <div className="space-y-3 mb-6">
+      <div className="space-y-2 sm:space-y-3 mb-4 sm:mb-6">
         {data.options.map((option, idx) => {
-          let cardStyle = "rpg-card px-5 py-4 cursor-pointer transition-all";
+          let cardStyle = "rpg-card px-3 py-3 sm:px-5 sm:py-4 cursor-pointer transition-all";
           if (submitted) {
             if (idx === correctIndex) {
               cardStyle += " border-hp-green/60 bg-hp-green/10 glow-green";
@@ -266,9 +266,9 @@ function MultipleChoiceStep({
               onClick={() => !submitted && setSelected(idx)}
               className={cardStyle + " w-full text-left"}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <span
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border ${
+                  className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold border shrink-0 ${
                     submitted && idx === correctIndex
                       ? "bg-hp-green/20 border-hp-green text-hp-green-bright"
                       : submitted && idx === selected
@@ -280,7 +280,7 @@ function MultipleChoiceStep({
                 >
                   {String.fromCharCode(65 + idx)}
                 </span>
-                <span className="text-slate-200 font-mono text-sm">{option}</span>
+                <span className="text-slate-200 font-mono text-xs sm:text-sm">{option}</span>
               </div>
             </motion.button>
           );
@@ -408,7 +408,7 @@ export default function InteractiveExercise({
     >
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gold text-glow-gold mb-2">
+        <h2 className="text-xl sm:text-2xl font-bold text-gold text-glow-gold mb-2">
           {section.title}
         </h2>
         <p className="text-slate-400">{section.description}</p>
@@ -434,7 +434,7 @@ export default function InteractiveExercise({
 
       {/* Step content */}
       <motion.div
-        className="rpg-card p-8 glow-gold"
+        className="rpg-card p-4 sm:p-6 glow-gold"
         initial={reducedMotion ? undefined : { scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={reducedMotion ? undefined : { type: "spring", stiffness: 200, damping: 20 }}

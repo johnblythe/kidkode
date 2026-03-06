@@ -43,7 +43,7 @@ function renderMarkdown(md: string): React.ReactNode[] {
     // Headers
     if (line.startsWith("### ")) {
       elements.push(
-        <h3 key={elements.length} className="text-xl font-bold text-gold mt-6 mb-3 text-glow-gold">
+        <h3 key={elements.length} className="text-lg sm:text-xl font-bold text-gold mt-4 sm:mt-6 mb-2 sm:mb-3 text-glow-gold">
           {inlineFormat(line.slice(4))}
         </h3>
       );
@@ -52,7 +52,7 @@ function renderMarkdown(md: string): React.ReactNode[] {
     }
     if (line.startsWith("## ")) {
       elements.push(
-        <h2 key={elements.length} className="text-2xl font-bold text-gold mt-8 mb-4 text-glow-gold">
+        <h2 key={elements.length} className="text-xl sm:text-2xl font-bold text-gold mt-6 sm:mt-8 mb-3 sm:mb-4 text-glow-gold">
           {inlineFormat(line.slice(3))}
         </h2>
       );
@@ -106,9 +106,9 @@ function renderMarkdown(md: string): React.ReactNode[] {
       elements.push(
         <pre
           key={elements.length}
-          className="bg-void rounded-lg p-4 mb-4 overflow-x-auto border border-gold-dim/20"
+          className="bg-void rounded-lg p-2 sm:p-4 mb-4 overflow-x-auto border border-gold-dim/20"
         >
-          <code className="text-xp-purple-bright font-mono text-sm whitespace-pre">
+          <code className="text-xp-purple-bright font-mono text-xs sm:text-sm whitespace-pre">
             {codeLines.join("\n")}
           </code>
         </pre>
@@ -149,7 +149,7 @@ function renderTable(tableLines: string[], keyBase: number): React.ReactNode {
             {header.map((cell, i) => (
               <th
                 key={i}
-                className="px-4 py-2 text-left text-gold font-bold border border-gold-dim/20"
+                className="px-2 py-1 sm:px-4 sm:py-2 text-left text-gold font-bold border border-gold-dim/20 text-xs sm:text-sm"
               >
                 {inlineFormat(cell)}
               </th>
@@ -162,7 +162,7 @@ function renderTable(tableLines: string[], keyBase: number): React.ReactNode {
               {row.map((cell, ci) => (
                 <td
                   key={ci}
-                  className="px-4 py-2 border border-gold-dim/10 text-slate-300"
+                  className="px-2 py-1 sm:px-4 sm:py-2 border border-gold-dim/10 text-slate-300 text-xs sm:text-sm"
                 >
                   {inlineFormat(cell)}
                 </td>
@@ -243,7 +243,7 @@ export default function ReadingSection({ section, onComplete }: ReadingSectionPr
       {/* Parchment-style card */}
       <div
         ref={contentRef}
-        className="rpg-card p-8 max-h-[60vh] overflow-y-auto"
+        className="rpg-card p-4 sm:p-6 max-h-[60vh] overflow-y-auto"
         style={{
           background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%)",
           borderColor: "rgba(251, 191, 36, 0.25)",

@@ -34,7 +34,7 @@ export default function MergeConflictHydra({ state }: BossSpriteProps) {
     >
       <svg
         viewBox="0 0 200 200"
-        className="w-48 h-48 md:w-64 md:h-64"
+        className="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"
       >
