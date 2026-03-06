@@ -371,6 +371,22 @@ body {
 }
 
 /* ============================================
+   Torch / Flame
+   ============================================ */
+
+@keyframes torch-flicker {
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  25% { transform: scale(1.05); opacity: 1; }
+  50% { transform: scale(0.95); opacity: 0.7; }
+  75% { transform: scale(1.03); opacity: 0.95; }
+}
+
+.torch-flame {
+  animation: torch-flicker 0.8s ease-in-out infinite;
+  display: inline-block;
+}
+
+/* ============================================
    Reduced Motion
    ============================================ */
 
@@ -383,7 +399,8 @@ body {
   .streak-fire,
   .float-up-damage,
   .screen-shake,
-  .hit-flash {
+  .hit-flash,
+  .torch-flame {
     animation: none !important;
   }
 

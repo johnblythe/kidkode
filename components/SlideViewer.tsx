@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { SlideSection } from "@/lib/types";
 import { useAudio } from "@/lib/audio/AudioContext";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 interface SlideViewerProps {
   section: SlideSection;
@@ -37,6 +38,22 @@ const animationVariants: Record<string, { initial: any; animate: any; exit: any 
     animate: { opacity: 1, scale: 1 },
     exit: { opacity: 0, scale: 0.8 },
   },
+  swoosh: {
+    initial: { opacity: 0, x: 120, scale: 0.95 },
+    animate: { opacity: 1, x: 0, scale: 1 },
+    exit: { opacity: 0, x: -120, scale: 0.95 },
+  },
+  "page-flip": {
+    initial: { opacity: 0, rotateY: -90 },
+    animate: { opacity: 1, rotateY: 0 },
+    exit: { opacity: 0, rotateY: 90 },
+  },
+};
+
+const reducedVariants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  exit: { opacity: 0 },
 };
 
 function renderContent(text: string): React.ReactNode {
@@ -94,12 +111,15 @@ function TypewriterText({ text, speed = 30 }: { text: string; speed?: number }) 
 
 export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
   const { sfx } = useAudio();
+  const reducedMotion = useReducedMotion();
   const [currentFrame, setCurrentFrame] = useState(0);
   const frames = section.frames;
   const frame = frames[currentFrame];
   const isLast = currentFrame === frames.length - 1;
   const anim = frame.animation || "fade";
-  const variants = animationVariants[anim] || animationVariants.fade;
+  const variants = reducedMotion
+    ? reducedVariants
+    : (animationVariants[anim] || animationVariants.fade);
 
   const goNext = useCallback(() => {
     sfx("slide-whoosh");
@@ -121,14 +141,21 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
   return (
     <div className="flex flex-col items-center w-full max-w-3xl mx-auto">
       {/* Slide card */}
-      <div className="w-full min-h-[400px] relative">
+      <div
+        className="w-full min-h-[400px] relative"
+        style={anim === "page-flip" ? { perspective: 1200 } : undefined}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentFrame}
             initial={variants.initial}
             animate={variants.animate}
             exit={variants.exit}
-            transition={{ duration: 0.5, ease: "easeInOut" }}
+            transition={
+              anim === "swoosh" && !reducedMotion
+                ? { type: "spring", stiffness: 300, damping: 30 }
+                : { duration: 0.5, ease: "easeInOut" }
+            }
             className="rpg-card p-8 glow-gold w-full"
           >
             {/* Title */}

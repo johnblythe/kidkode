@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import type { ReadingSection as ReadingSectionType } from "@/lib/types";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 interface ReadingSectionProps {
   section: ReadingSectionType;
@@ -198,7 +199,22 @@ function renderTable(tableLines: string[], keyBase: number): React.ReactNode {
   );
 }
 
+function RevealBlock({ children, index, reducedMotion }: { children: React.ReactNode; index: number; reducedMotion: boolean }) {
+  if (reducedMotion) return <>{children}</>;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.15 }}
+      transition={{ duration: 0.4, delay: index * 0.05 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 export default function ReadingSection({ section, onComplete }: ReadingSectionProps) {
+  const reducedMotion = useReducedMotion();
   const [scrollProgress, setScrollProgress] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -255,7 +271,11 @@ export default function ReadingSection({ section, onComplete }: ReadingSectionPr
             "0 0 15px rgba(251, 191, 36, 0.1), inset 0 0 30px rgba(0,0,0,0.3)",
         }}
       >
-        {renderMarkdown(section.content)}
+        {(renderMarkdown(section.content) as React.ReactNode[]).map((block, i) => (
+          <RevealBlock key={i} index={i} reducedMotion={reducedMotion}>
+            {block}
+          </RevealBlock>
+        ))}
       </div>
 
       {/* Complete button */}

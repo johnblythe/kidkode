@@ -6,6 +6,7 @@ import type { InteractiveSection, InteractiveStep } from "@/lib/types";
 import type { DragDropScenarioStep } from "@/lib/git-branch-types";
 import DragDropStep from "@/components/DragDropStep";
 import { useAudio } from "@/lib/audio/AudioContext";
+import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
 interface InteractiveExerciseProps {
   section: InteractiveSection;
@@ -361,6 +362,7 @@ export default function InteractiveExercise({
   section,
   onComplete,
 }: InteractiveExerciseProps) {
+  const reducedMotion = useReducedMotion();
   const [currentStep, setCurrentStep] = useState(0);
   const steps = section.steps;
   const step = steps[currentStep];
@@ -407,7 +409,12 @@ export default function InteractiveExercise({
       </div>
 
       {/* Step content */}
-      <div className="rpg-card p-8 glow-gold">
+      <motion.div
+        className="rpg-card p-8 glow-gold"
+        initial={reducedMotion ? undefined : { scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={reducedMotion ? undefined : { type: "spring", stiffness: 200, damping: 20 }}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -444,7 +451,7 @@ export default function InteractiveExercise({
             )}
           </motion.div>
         </AnimatePresence>
-      </div>
+      </motion.div>
     </motion.div>
   );
 }

@@ -6,7 +6,7 @@ export interface SlideFrame {
   title: string;
   content: string; // markdown
   visual?: string; // ASCII art or SVG reference
-  animation?: "fade" | "slide-left" | "slide-up" | "typewriter" | "pop";
+  animation?: "fade" | "slide-left" | "slide-up" | "typewriter" | "pop" | "swoosh" | "page-flip";
   notes?: string; // narrator text (TTS later)
   duration?: number; // suggested seconds on this frame
 }
