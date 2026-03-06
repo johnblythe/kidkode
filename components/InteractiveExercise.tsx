@@ -434,7 +434,7 @@ export default function InteractiveExercise({
 
       {/* Step content */}
       <motion.div
-        className="rpg-card p-4 sm:p-8 glow-gold"
+        className="rpg-card p-4 sm:p-6 glow-gold"
         initial={reducedMotion ? undefined : { scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={reducedMotion ? undefined : { type: "spring", stiffness: 200, damping: 20 }}

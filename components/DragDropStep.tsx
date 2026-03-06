@@ -354,7 +354,7 @@ export default function DragDropStep({
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
-                className="rpg-card p-4 sm:p-8 max-w-lg w-full glow-purple"
+                className="rpg-card p-4 sm:p-6 max-w-lg w-full glow-purple"
               >
                 <h3 className="text-lg sm:text-xl font-black text-fire-red mb-2">
                   Merge Conflict!

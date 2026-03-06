@@ -95,7 +95,7 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
                 ? { type: "spring", stiffness: 300, damping: 30 }
                 : { duration: 0.5, ease: "easeInOut" }
             }
-            className="rpg-card p-4 sm:p-8 glow-gold w-full"
+            className="rpg-card p-4 sm:p-6 glow-gold w-full"
           >
             {/* Title */}
             <h2 className="text-xl sm:text-2xl font-bold text-gold mb-4 sm:mb-6 text-glow-gold">
@@ -144,7 +144,7 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
           <button
             key={i}
             onClick={() => setCurrentFrame(i)}
-            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+            className={`w-3 h-3 rounded-full transition-all duration-300 ${
               i === currentFrame
                 ? "bg-gold scale-125 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
                 : i < currentFrame

@@ -243,7 +243,7 @@ export default function ReadingSection({ section, onComplete }: ReadingSectionPr
       {/* Parchment-style card */}
       <div
         ref={contentRef}
-        className="rpg-card p-4 sm:p-8 max-h-[60vh] overflow-y-auto"
+        className="rpg-card p-4 sm:p-6 max-h-[60vh] overflow-y-auto"
         style={{
           background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #1a1a2e 100%)",
           borderColor: "rgba(251, 191, 36, 0.25)",
