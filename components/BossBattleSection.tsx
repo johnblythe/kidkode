@@ -93,7 +93,7 @@ function PlayerHearts({ current, max }: { current: number; max: number }) {
               ? { duration: 0.3 }
               : { duration: 0.5, delay: i * 0.1 }
           }
-          className="text-2xl"
+          className="text-xl sm:text-2xl"
         >
           {i < current ? "\u2764\uFE0F" : "\u{1F5A4}"}
         </motion.span>
@@ -299,13 +299,13 @@ export default function BossBattleSection({
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 120, damping: 10 }}
         >
-          {BossSprite ? <BossSprite state="idle" /> : <div className="w-48 h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
+          {BossSprite ? <BossSprite state="idle" /> : <div className="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
         </motion.div>
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="text-3xl font-black text-fire-red mt-6 mb-2"
+          className="text-2xl sm:text-3xl font-black text-fire-red mt-4 sm:mt-6 mb-2"
           style={{ textShadow: "0 0 20px rgba(239,68,68,0.5)" }}
         >
           {boss.name}
@@ -314,7 +314,7 @@ export default function BossBattleSection({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8 }}
-          className="text-slate-400 italic text-lg"
+          className="text-slate-400 italic text-base sm:text-lg"
         >
           {boss.description}
         </motion.p>
@@ -446,7 +446,7 @@ export default function BossBattleSection({
       className={`w-full max-w-3xl mx-auto ${shaking ? "screen-shake" : ""}`}
     >
       {/* Boss area */}
-      <div className="rpg-card p-6 mb-4 glow-purple">
+      <div className="rpg-card p-4 sm:p-6 mb-4 glow-purple">
         {/* Boss name + HP */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-black text-fire-red">{boss.name}</h3>
@@ -464,7 +464,7 @@ export default function BossBattleSection({
 
         {/* Boss sprite */}
         <div className="flex justify-center my-6 relative">
-          {BossSprite ? <BossSprite state={spriteState} /> : <div className="w-48 h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
+          {BossSprite ? <BossSprite state={spriteState} /> : <div className="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
           {/* Hit explosion */}
           <AnimatePresence>
             {showHitExplosion && !reducedMotion && <HitExplosion key="hit-explosion" />}
@@ -493,7 +493,7 @@ export default function BossBattleSection({
       </div>
 
       {/* Question + attacks */}
-      <div className="rpg-card p-6 mb-4">
+      <div className="rpg-card p-4 sm:p-6 mb-4">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentQ}
@@ -502,7 +502,7 @@ export default function BossBattleSection({
             exit={{ opacity: 0, x: -30 }}
             transition={{ duration: 0.3 }}
           >
-            <h3 className="text-lg font-bold text-slate-100 mb-5 leading-relaxed">
+            <h3 className="text-base sm:text-lg font-bold text-slate-100 mb-3 sm:mb-5 leading-relaxed">
               {question.question}
             </h3>
 

@@ -81,7 +81,7 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
     <div className="flex flex-col items-center w-full max-w-3xl mx-auto">
       {/* Slide card */}
       <div
-        className="w-full min-h-[400px] relative"
+        className="w-full min-h-[300px] sm:min-h-[400px] relative"
         style={anim === "page-flip" ? { perspective: 1200 } : undefined}
       >
         <AnimatePresence mode="wait">
@@ -95,15 +95,15 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
                 ? { type: "spring", stiffness: 300, damping: 30 }
                 : { duration: 0.5, ease: "easeInOut" }
             }
-            className="rpg-card p-8 glow-gold w-full"
+            className="rpg-card p-4 sm:p-8 glow-gold w-full"
           >
             {/* Title */}
-            <h2 className="text-2xl font-bold text-gold mb-6 text-glow-gold">
+            <h2 className="text-xl sm:text-2xl font-bold text-gold mb-4 sm:mb-6 text-glow-gold">
               {frame.title}
             </h2>
 
             {/* Content */}
-            <div className="text-lg leading-relaxed text-slate-200 mb-6">
+            <div className="text-base sm:text-lg leading-relaxed text-slate-200 mb-4 sm:mb-6">
               {anim === "typewriter" ? (
                 <TypewriterText text={frame.content} />
               ) : (
@@ -117,7 +117,7 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.4 }}
-                className="bg-void rounded-lg border border-xp-purple-dim/30 p-4 font-mono text-sm text-xp-purple-bright whitespace-pre overflow-x-auto glow-purple"
+                className="bg-void rounded-lg border border-xp-purple-dim/30 p-3 sm:p-4 font-mono text-xs sm:text-sm text-xp-purple-bright whitespace-pre overflow-x-auto glow-purple"
               >
                 {frame.visual}
               </motion.div>
@@ -144,7 +144,7 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
           <button
             key={i}
             onClick={() => setCurrentFrame(i)}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
               i === currentFrame
                 ? "bg-gold scale-125 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
                 : i < currentFrame
@@ -161,7 +161,7 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={goNext}
-        className="mt-2 px-8 py-3 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg text-lg shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] transition-shadow"
+        className="mt-2 px-6 py-2.5 sm:px-8 sm:py-3 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg text-base sm:text-lg shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] transition-shadow"
       >
         {isLast ? "Continue →" : "Next →"}
       </motion.button>

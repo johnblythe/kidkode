@@ -29,7 +29,7 @@ export default function DraggableItem({ id, index, item }: DraggableItemProps) {
     <div
       ref={setNodeRef}
       style={style}
-      className="rpg-card px-5 py-3 cursor-grab active:cursor-grabbing select-none touch-none"
+      className="rpg-card px-3 py-2 sm:px-5 sm:py-3 cursor-grab active:cursor-grabbing select-none touch-none"
       {...listeners}
       {...attributes}
     >
@@ -37,7 +37,7 @@ export default function DraggableItem({ id, index, item }: DraggableItemProps) {
         <span className="text-lg">
           {item.type === "branch" ? "\u{1F33F}" : "\u{1F4E6}"}
         </span>
-        <span className="text-sm font-medium text-slate-200">
+        <span className="text-xs sm:text-sm font-medium text-slate-200">
           {item.label}
         </span>
       </div>

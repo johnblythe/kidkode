@@ -219,7 +219,7 @@ export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
                 animate={{ scale: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
               >
-                <div className="w-24 h-24 mx-auto rounded-xl bg-void-lighter border-2 border-xp-purple-dim flex items-center justify-center text-5xl mb-2">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-xl bg-void-lighter border-2 border-xp-purple-dim flex items-center justify-center text-4xl sm:text-5xl mb-2">
                   <motion.span
                     animate={{ y: [0, -4, 0] }}
                     transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
@@ -236,7 +236,7 @@ export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
                       whileHover={{ scale: 1.2 }}
                       whileTap={{ scale: 0.9 }}
                       onClick={() => setSelectedClass(i)}
-                      className={`w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all ${
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center text-lg sm:text-xl transition-all ${
                         i === selectedClass
                           ? "bg-xp-purple-dim/50 border-2 border-xp-purple glow-purple"
                           : "bg-void-lighter border border-locked hover:border-xp-purple-dim"
@@ -281,7 +281,7 @@ export default function HeroNameSetup({ onComplete }: HeroNameSetupProps) {
                     onKeyDown={handleKeyDown}
                     placeholder="Enter your hero name..."
                     maxLength={MAX_NAME_LENGTH}
-                    className="w-full px-5 py-4 bg-void-lighter border-2 border-gold-dim rounded-lg text-center text-lg text-gold placeholder-locked-text font-[family-name:var(--font-pixel)] text-[14px] tracking-wider outline-none transition-all focus:border-gold focus:shadow-[0_0_20px_rgba(251,191,36,0.3),0_0_40px_rgba(251,191,36,0.1)]"
+                    className="w-full px-4 py-3 sm:px-5 sm:py-4 bg-void-lighter border-2 border-gold-dim rounded-lg text-center text-gold placeholder-locked-text font-[family-name:var(--font-pixel)] text-sm sm:text-base tracking-wider outline-none transition-all focus:border-gold focus:shadow-[0_0_20px_rgba(251,191,36,0.3),0_0_40px_rgba(251,191,36,0.1)]"
                     autoComplete="off"
                     spellCheck={false}
                   />

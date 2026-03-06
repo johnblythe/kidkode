@@ -148,7 +148,7 @@ export default function LessonPlayerPage() {
     <div className="min-h-screen flex flex-col">
       {/* Top bar */}
       <header className="sticky top-0 z-40 bg-void/90 backdrop-blur-sm border-b border-gold-dim/10">
-        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-4">
+        <div className="max-w-5xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-4">
           {/* Back button */}
           <button
             onClick={() => router.push("/")}
@@ -181,7 +181,7 @@ export default function LessonPlayerPage() {
                   title={sectionLabel(sec)}
                 >
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                    className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-[10px] sm:text-xs font-bold transition-all ${
                       i < currentSection
                         ? "bg-hp-green/20 border border-hp-green/50 text-hp-green-bright"
                         : i === currentSection
@@ -203,7 +203,7 @@ export default function LessonPlayerPage() {
                 {/* Connector line */}
                 {i < lesson.sections.length - 1 && (
                   <div
-                    className={`w-4 h-0.5 ${
+                    className={`w-2 sm:w-4 h-0.5 ${
                       i < currentSection ? "bg-hp-green/50" : "bg-void-lighter"
                     }`}
                   />
@@ -227,7 +227,7 @@ export default function LessonPlayerPage() {
       </header>
 
       {/* Section content */}
-      <main className="flex-1 px-4 py-8 flex items-start justify-center">
+      <main className="flex-1 px-3 py-6 sm:px-4 sm:py-8 flex items-start justify-center">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentSection}
@@ -267,7 +267,7 @@ export default function LessonPlayerPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gold-dim/10 py-3 px-4">
+      <footer className="border-t border-gold-dim/10 py-2 px-3 sm:py-3 sm:px-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-slate-500">
           <span>
             Section {currentSection + 1} of {lesson.sections.length}
