@@ -15,7 +15,7 @@ interface ReadingSectionProps {
  * Simple markdown-to-JSX renderer. Handles:
  * ## headers, **bold**, `code`, tables, - lists, numbered lists, blank lines
  */
-function renderMarkdown(md: string): React.ReactNode {
+function renderMarkdown(md: string): React.ReactNode[] {
   const lines = md.split("\n");
   const elements: React.ReactNode[] = [];
   let i = 0;
@@ -194,7 +194,7 @@ export default function ReadingSection({ section, onComplete }: ReadingSectionPr
   const [scrollProgress, setScrollProgress] = useState(0);
   const contentRef = useRef<HTMLDivElement>(null);
   const renderedContent = useMemo(
-    () => renderMarkdown(section.content) as React.ReactNode[],
+    () => renderMarkdown(section.content),
     [section.content]
   );
 

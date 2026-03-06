@@ -53,7 +53,7 @@ function SubmitFlourish({ onComplete }: { onComplete: () => void }) {
 
       {/* Canvas confetti burst (replaces 40 framer-motion divs) */}
       <div className="absolute inset-0">
-        <CanvasParticles effect="confetti" count={40} trigger="mount" />
+        <CanvasParticles effect="confetti" count={40} />
       </div>
 
       {/* "Quest Begins!" text */}

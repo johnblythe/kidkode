@@ -1,8 +1,14 @@
 // Shared animation variants for slide transitions
 // Used by SlideViewer and playground/transitions
 
+export const ANIMATION_NAMES = [
+  "fade", "slide-left", "slide-up", "typewriter", "pop", "swoosh", "page-flip",
+] as const;
+
+export type AnimationName = (typeof ANIMATION_NAMES)[number];
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const animationVariants: Record<string, { initial: any; animate: any; exit: any }> = {
+export const animationVariants: Record<AnimationName, { initial: any; animate: any; exit: any }> = {
   fade: {
     initial: { opacity: 0 },
     animate: { opacity: 1 },

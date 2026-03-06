@@ -71,7 +71,7 @@ export default function UnlockScreen({ xpEarned, newLevel, streak }: UnlockScree
 
       {/* Canvas confetti particles (replaces 30 framer-motion divs) */}
       <div className="absolute inset-0">
-        <CanvasParticles effect="confetti" count={120} trigger="mount" />
+        <CanvasParticles effect="confetti" count={120}  />
       </div>
 
       {/* Radial rings */}

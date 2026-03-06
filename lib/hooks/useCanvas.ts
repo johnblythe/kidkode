@@ -1,13 +1,14 @@
 "use client";
 
-import { useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback, type RefObject } from "react";
 
-interface UseCanvasOptions {
-  onFrame: (ctx: CanvasRenderingContext2D, dt: number) => void;
-  loop?: boolean;
-}
-
-export function useCanvas({ onFrame, loop = true }: UseCanvasOptions) {
+/**
+ * Drives a canvas animation loop with delta-time, visibility pausing, and cleanup.
+ * `onFrame` returning `false` stops the loop (for one-shot effects).
+ */
+export function useCanvas(
+  onFrame: (ctx: CanvasRenderingContext2D, dt: number) => boolean | void,
+): RefObject<HTMLCanvasElement | null> {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number>(0);
   const lastTimeRef = useRef<number>(0);
@@ -21,17 +22,21 @@ export function useCanvas({ onFrame, loop = true }: UseCanvasOptions) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    if (!ctx) {
+      console.warn("[kidkode] Canvas 2D context unavailable. Particles will not render.");
+      return;
+    }
 
-    const dt = lastTimeRef.current ? (time - lastTimeRef.current) / 1000 : 0.016;
+    const dt = lastTimeRef.current
+      ? Math.min((time - lastTimeRef.current) / 1000, 0.1)
+      : 0.016;
     lastTimeRef.current = time;
 
-    onFrameRef.current(ctx, dt);
-
-    if (loop) {
+    const shouldContinue = onFrameRef.current(ctx, dt);
+    if (shouldContinue !== false) {
       rafRef.current = requestAnimationFrame(tick);
     }
-  }, [loop]);
+  }, []);
 
   useEffect(() => {
     rafRef.current = requestAnimationFrame(tick);

@@ -355,6 +355,31 @@ function MultipleChoiceStep({
   );
 }
 
+// ---------- Step Renderer ----------
+
+function renderStep(step: InteractiveStep, onStepComplete: () => void) {
+  switch (step.type) {
+    case "sequence":
+      return <SequenceStep step={step} onStepComplete={onStepComplete} />;
+    case "multiple-choice":
+      return <MultipleChoiceStep step={step} onStepComplete={onStepComplete} />;
+    case "drag-drop":
+      return <DragDropStep scenario={step.data} onStepComplete={onStepComplete} />;
+    default:
+      return (
+        <div>
+          <p className="text-slate-200 mb-4">{step.instruction}</p>
+          <button
+            onClick={onStepComplete}
+            className="px-6 py-2.5 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg"
+          >
+            Continue
+          </button>
+        </div>
+      );
+  }
+}
+
 // ---------- Main Component ----------
 
 export default function InteractiveExercise({
@@ -417,37 +442,12 @@ export default function InteractiveExercise({
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -30 }}
+            initial={reducedMotion ? { opacity: 0 } : { opacity: 0, x: 30 }}
+            animate={reducedMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
+            exit={reducedMotion ? { opacity: 0 } : { opacity: 0, x: -30 }}
             transition={{ duration: 0.3 }}
           >
-            {step.type === "sequence" && (
-              <SequenceStep step={step} onStepComplete={handleStepComplete} />
-            )}
-            {step.type === "multiple-choice" && (
-              <MultipleChoiceStep step={step} onStepComplete={handleStepComplete} />
-            )}
-            {step.type === "drag-drop" && (
-              <DragDropStep
-                scenario={step.data}
-                onStepComplete={handleStepComplete}
-              />
-            )}
-            {/* Fallback for unhandled types */}
-            {step.type !== "sequence" && step.type !== "multiple-choice" && step.type !== "drag-drop" && (
-              <div>
-                <p className="text-slate-200 mb-4">{step.instruction}</p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleStepComplete}
-                  className="px-6 py-2.5 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg"
-                >
-                  Continue
-                </motion.button>
-              </div>
-            )}
+            {renderStep(step, handleStepComplete)}
           </motion.div>
         </AnimatePresence>
       </motion.div>

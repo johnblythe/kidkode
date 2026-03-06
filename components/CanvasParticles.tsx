@@ -9,7 +9,6 @@ type Effect = "confetti" | "sparkle" | "stars";
 interface CanvasParticlesProps {
   effect: Effect;
   count: number;
-  trigger?: "mount" | "manual";
   loop?: boolean;
   className?: string;
 }
@@ -35,7 +34,7 @@ const STAR_COLORS = ["#fbbf24", "#a855f7", "#c084fc", "#fde68a"];
 function seededRandom(seed: number): () => number {
   let s = seed;
   return () => {
-    s = (s * 16807 + 0) % 2147483647;
+    s = (s * 16807) % 2147483647;
     return (s - 1) / 2147483646;
   };
 }
@@ -114,20 +113,12 @@ function drawParticle(ctx: CanvasRenderingContext2D, p: Particle, effect: Effect
       ctx.restore();
       break;
     }
-    case "sparkle": {
-      ctx.fillStyle = p.color;
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = p.size * 2;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-      break;
-    }
+    case "sparkle":
     case "stars": {
+      const blur = effect === "stars" ? p.size * 3 : p.size * 2;
       ctx.fillStyle = p.color;
       ctx.shadowColor = p.color;
-      ctx.shadowBlur = p.size * 3;
+      ctx.shadowBlur = blur;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
       ctx.fill();
@@ -139,7 +130,7 @@ function drawParticle(ctx: CanvasRenderingContext2D, p: Particle, effect: Effect
   ctx.globalAlpha = 1;
 }
 
-function updateParticle(p: Particle, dt: number, effect: Effect, w: number, h: number, loop: boolean): boolean {
+function updateParticle(p: Particle, dt: number, effect: Effect, loop: boolean): boolean {
   p.life += dt;
 
   switch (effect) {
@@ -178,7 +169,6 @@ function updateParticle(p: Particle, dt: number, effect: Effect, w: number, h: n
 export default function CanvasParticles({
   effect,
   count,
-  trigger = "mount",
   loop = false,
   className = "",
 }: CanvasParticlesProps) {
@@ -195,24 +185,25 @@ export default function CanvasParticles({
     );
   }, [effect, count]);
 
-  const onFrame = useCallback((ctx: CanvasRenderingContext2D, dt: number) => {
+  const onFrame = useCallback((ctx: CanvasRenderingContext2D, dt: number): boolean | void => {
     const canvas = ctx.canvas;
-    const w = canvas.width;
-    const h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     const particles = particlesRef.current;
     for (let i = particles.length - 1; i >= 0; i--) {
-      const alive = updateParticle(particles[i], dt, effect, w, h, loop);
+      const alive = updateParticle(particles[i], dt, effect, loop);
       if (!alive) {
         particles.splice(i, 1);
         continue;
       }
       drawParticle(ctx, particles[i], effect);
     }
+
+    // Stop the animation loop when all particles are dead (one-shot effects)
+    if (!loop && particles.length === 0) return false;
   }, [effect, loop]);
 
-  const canvasRef = useCanvas({ onFrame, loop });
+  const canvasRef = useCanvas(onFrame);
 
   // Size the canvas to match container
   useEffect(() => {

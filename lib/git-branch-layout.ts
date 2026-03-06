@@ -46,17 +46,25 @@ export interface LayoutBranch {
   nodes: LayoutNode[];
 }
 
+export interface LayoutLine {
+  x1: number; y1: number; x2: number; y2: number; color: string;
+}
+
 export interface TreeLayout {
   layoutBranches: LayoutBranch[];
-  forkLines: Array<{ x1: number; y1: number; x2: number; y2: number; color: string }>;
-  mergeLines: Array<{ x1: number; y1: number; x2: number; y2: number; color: string }>;
+  forkLines: LayoutLine[];
+  mergeLines: LayoutLine[];
   totalWidth: number;
   totalHeight: number;
 }
 
 // ── Layout computation ──
 
+const EMPTY_LAYOUT: TreeLayout = { layoutBranches: [], forkLines: [], mergeLines: [], totalWidth: 0, totalHeight: 0 };
+
 export function computeLayout(tree: GitTreeState): TreeLayout {
+  if (!tree.branches.length) return EMPTY_LAYOUT;
+
   const branchOrder = tree.branches.map((b) => b.id);
   const branchXMap = new Map<string, number>();
   branchOrder.forEach((id, i) => {
@@ -137,15 +145,21 @@ export function computeLayout(tree: GitTreeState): TreeLayout {
   const totalHeight = PADDING_TOP + globalY * NODE_SPACING_Y + 40;
   const totalWidth = PADDING_LEFT + tree.branches.length * BRANCH_SPACING_X + 60;
 
+  // Pre-build node lookup map for O(1) lookups
+  const nodeByCommitId = new Map<string, LayoutNode>();
+  for (const lb of layoutBranches) {
+    for (const node of lb.nodes) {
+      nodeByCommitId.set(node.commit.id, node);
+    }
+  }
+
   // Compute fork lines
-  const forkLines: Array<{ x1: number; y1: number; x2: number; y2: number; color: string }> = [];
+  const forkLines: LayoutLine[] = [];
   for (let i = 1; i < tree.branches.length; i++) {
     const branch = tree.branches[i];
     const firstNode = layoutBranches[i].nodes[0];
     if (branch.forkFromCommit && firstNode) {
-      const parentNode = layoutBranches.flatMap((lb) => lb.nodes).find(
-        (n) => n.commit.id === branch.forkFromCommit
-      );
+      const parentNode = nodeByCommitId.get(branch.forkFromCommit);
       if (parentNode) {
         forkLines.push({
           x1: parentNode.x,
@@ -159,7 +173,7 @@ export function computeLayout(tree: GitTreeState): TreeLayout {
   }
 
   // Compute merge lines
-  const mergeLines: Array<{ x1: number; y1: number; x2: number; y2: number; color: string }> = [];
+  const mergeLines: LayoutLine[] = [];
   for (const lb of layoutBranches) {
     for (const node of lb.nodes) {
       if (node.commit.id.startsWith("merge-")) {

@@ -7,6 +7,7 @@ import {
   LABEL_OFFSET_X,
   computeLayout,
   type LayoutNode,
+  type TreeLayout,
 } from "@/lib/git-branch-layout";
 
 // ── Components ──
@@ -142,13 +143,14 @@ function BranchLabel({
 
 // ── Main Component ──
 
-export interface GitBranchTreeProps {
+interface GitBranchTreeProps {
   tree: GitTreeState;
+  layout?: TreeLayout;
 }
 
-export default function GitBranchTree({ tree }: GitBranchTreeProps) {
+export default function GitBranchTree({ tree, layout: layoutProp }: GitBranchTreeProps) {
   const { layoutBranches, forkLines, mergeLines, totalWidth, totalHeight } =
-    computeLayout(tree);
+    layoutProp ?? computeLayout(tree);
 
   return (
     <div className="overflow-x-auto">

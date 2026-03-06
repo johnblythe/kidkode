@@ -236,7 +236,7 @@ export default function DragDropStep({
           style={{ touchAction: "none" }}
         >
           <div ref={containerRef} className="relative overflow-x-auto">
-            <GitBranchTree tree={tree} />
+            <GitBranchTree tree={tree} layout={layout} />
 
             {/* DOM overlay drop zones, positioned via measured SVG coords */}
             {!completed &&

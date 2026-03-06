@@ -2,11 +2,13 @@
 // KidKode - Lesson & Progress Types
 // ============================================
 
+import type { AnimationName } from "./slide-variants";
+
 export interface SlideFrame {
   title: string;
   content: string; // markdown
   visual?: string; // ASCII art or SVG reference
-  animation?: "fade" | "slide-left" | "slide-up" | "typewriter" | "pop" | "swoosh" | "page-flip";
+  animation?: AnimationName;
   notes?: string; // narrator text (TTS later)
   duration?: number; // suggested seconds on this frame
 }
@@ -33,7 +35,6 @@ interface InteractiveStepBase {
 export interface DragDropInteractiveStep extends InteractiveStepBase {
   type: "drag-drop";
   data: DragDropScenarioStep;
-  solution?: unknown;
 }
 
 export interface SequenceInteractiveStep extends InteractiveStepBase {
@@ -42,7 +43,6 @@ export interface SequenceInteractiveStep extends InteractiveStepBase {
     items: Array<{ id: string; text: string; description: string }>;
     correctOrder: string[];
   };
-  solution?: unknown;
 }
 
 export interface MultipleChoiceInteractiveStep extends InteractiveStepBase {
