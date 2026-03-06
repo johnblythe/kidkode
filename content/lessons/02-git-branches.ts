@@ -44,7 +44,7 @@ const mergedTree: GitTreeState = {
   branches: [...withCommitsTree.branches],
   commits: [
     ...withCommitsTree.commits,
-    { id: "merge-feature", message: "Merge feature/search", branch: "main", position: 3 },
+    { id: "merge-feature", message: "Merge search", branch: "main", position: 3 },
   ],
 };
 
