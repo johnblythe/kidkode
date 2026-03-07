@@ -20,9 +20,13 @@ export default function TypeCommandStep({ step, onStepComplete }: TypeCommandSte
   const [showHint, setShowHint] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const terminalRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     inputRef.current?.focus();
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   useEffect(() => {
@@ -70,9 +74,9 @@ export default function TypeCommandStep({ step, onStepComplete }: TypeCommandSte
     setInput("");
 
     if (isCorrect) {
-      setTimeout(onStepComplete, 1200);
+      timerRef.current = setTimeout(onStepComplete, 1200);
     } else {
-      setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         setResult(null);
         setHistory((prev) => [...prev, { type: "prompt", text: step.data.prompt }]);
       }, 800);

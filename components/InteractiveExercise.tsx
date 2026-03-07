@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { InteractiveSection, InteractiveStep, SequenceInteractiveStep, MultipleChoiceInteractiveStep, TypeCommandInteractiveStep, FillBlankInteractiveStep } from "@/lib/types";
+import type { InteractiveSection, InteractiveStep, SequenceInteractiveStep, MultipleChoiceInteractiveStep } from "@/lib/types";
 import DragDropStep from "@/components/DragDropStep";
 import TypeCommandStep from "@/components/TypeCommandStep";
 import FillBlankStep from "@/components/FillBlankStep";
@@ -376,14 +376,17 @@ function renderStep(step: InteractiveStep, onStepComplete: () => void) {
       return <FillBlankStep step={step} onStepComplete={onStepComplete} />;
     default: {
       const _exhaustive: never = step;
+      if (process.env.NODE_ENV === "development") {
+        console.error("[InteractiveExercise] Unknown step type:", (step as { type: string }).type);
+      }
       return (
         <div>
-          <p className="text-slate-200 mb-4">Unknown step type</p>
+          <p className="text-fire-red mb-4">This exercise step could not be loaded.</p>
           <button
             onClick={onStepComplete}
             className="px-6 py-2.5 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg"
           >
-            Continue
+            Skip
           </button>
         </div>
       );

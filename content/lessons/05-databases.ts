@@ -214,6 +214,7 @@ DELETE FROM inventory WHERE condition = 'broken'
               { id: "from", placeholder: "keyword", width: 4 },
               { id: "where", placeholder: "keyword", width: 5 },
             ],
+            filename: "query.sql",
           },
           solution: {
             select: ["SELECT", "select"],
@@ -233,6 +234,7 @@ DELETE FROM inventory WHERE condition = 'broken'
               { id: "into", placeholder: "keyword", width: 4 },
               { id: "values", placeholder: "keyword", width: 6 },
             ],
+            filename: "query.sql",
           },
           solution: {
             insert: ["INSERT", "insert"],

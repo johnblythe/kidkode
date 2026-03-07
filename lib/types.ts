@@ -65,9 +65,13 @@ export interface TypeCommandInteractiveStep extends InteractiveStepBase {
 export interface FillBlankInteractiveStep extends InteractiveStepBase {
   type: "fill-blank";
   data: {
-    template: string; // use ___ as blank delimiters
+    /** Text template. Use ___ (triple underscore) to mark blank positions. Count must equal blanks.length. */
+    template: string;
     blanks: Array<{ id: string; placeholder?: string; width?: number }>;
+    filename?: string;
+    caseSensitive?: boolean;
   };
+  /** Keyed by blank `id`. Each value is a single accepted answer or array of alternatives. */
   solution: Record<string, string | string[]>;
 }
 
