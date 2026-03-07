@@ -245,33 +245,35 @@ export default function BossBattleSection({
       const isCorrect = selectedIdx === correctIdx;
 
       if (isCorrect) {
-        // Flash correct feedback, then player attack hits boss
+        // Flash correct feedback + apply HP immediately so bar animates
         setAnswerFlash("correct");
+        const newBossHp = Math.max(0, bossHp - boss.damagePerCorrect);
+        setBossHp(newBossHp);
+        setDamageShow(boss.damagePerCorrect);
+        correctCountRef.current += 1;
+        setCorrectCount(correctCountRef.current);
+        // Delay hit VFX and advance
         safeTimeout(() => {
           setAnswerFlash(null);
           sfx("boss-hit");
           setShowHitExplosion(true);
           setSpriteState("damaged");
-          const newBossHp = Math.max(0, bossHp - boss.damagePerCorrect);
-          setBossHp(newBossHp);
-          setDamageShow(boss.damagePerCorrect);
-          correctCountRef.current += 1;
-          setCorrectCount(correctCountRef.current);
           safeTimeout(() => setShowHitExplosion(false), 500);
           safeTimeout(() => setDamageShow(null), 800);
           advanceOrEnd(newBossHp, playerHp);
         }, 600);
       } else {
-        // Flash wrong feedback, then boss counterattack
+        // Flash wrong feedback + apply HP loss immediately
         setAnswerFlash("wrong");
         sfx("wrong-buzz");
+        const newPlayerHp = playerHp - 1;
+        setPlayerHp(newPlayerHp);
+        setPlayerDamageShow(true);
+        // Delay boss attack VFX and advance
         safeTimeout(() => {
           setAnswerFlash(null);
           setSpriteState("attacking");
           setShaking(true);
-          setPlayerDamageShow(true);
-          const newPlayerHp = playerHp - 1;
-          setPlayerHp(newPlayerHp);
           setWrongQuestions((prev) => [...prev, question]);
           safeTimeout(() => setShaking(false), 300);
           safeTimeout(() => setPlayerDamageShow(false), 800);
