@@ -42,10 +42,18 @@ function TypewriterText({ text, speed = 30 }: { text: string; speed?: number }) 
     return () => clearInterval(interval);
   }, [text, speed]);
 
+  const skip = () => {
+    if (!done) setDone(true);
+  };
+
   if (done) {
     return <>{renderContent(text)}</>;
   }
-  return <span className="text-slate-200">{displayed}<span className="animate-pulse text-gold">|</span></span>;
+  return (
+    <span className="text-slate-200 cursor-pointer" onClick={skip} title="Click to skip">
+      {displayed}<span className="animate-pulse text-gold">|</span>
+    </span>
+  );
 }
 
 export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
@@ -144,15 +152,19 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
           <button
             key={i}
             onClick={() => setCurrentFrame(i)}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              i === currentFrame
-                ? "bg-gold scale-125 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                : i < currentFrame
-                ? "bg-gold-dim"
-                : "bg-void-lighter border border-gold-dim/30"
-            }`}
+            className="p-1.5 -m-1.5 group"
             aria-label={`Go to slide ${i + 1}`}
-          />
+          >
+            <div
+              className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${
+                i === currentFrame
+                  ? "bg-gold scale-125 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
+                  : i < currentFrame
+                  ? "bg-gold-dim group-hover:bg-gold/60"
+                  : "bg-void-lighter border border-gold-dim/30 group-hover:border-gold-dim/60"
+              }`}
+            />
+          </button>
         ))}
       </div>
 
