@@ -169,7 +169,7 @@ export default function BossBattleSection({
   const [actionLocked, setActionLocked] = useState(false);
   const [showHitExplosion, setShowHitExplosion] = useState(false);
   const [answerFlash, setAnswerFlash] = useState<"correct" | "wrong" | null>(null);
-  const [playerDamageShow, setPlayerDamageShow] = useState(false);
+  const [playerDamageCount, setPlayerDamageCount] = useState(0);
   const correctCountRef = useRef(0);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -268,7 +268,7 @@ export default function BossBattleSection({
         sfx("wrong-buzz");
         const newPlayerHp = playerHp - 1;
         setPlayerHp(newPlayerHp);
-        setPlayerDamageShow(true);
+        setPlayerDamageCount((c) => c + 1);
         // Delay boss attack VFX and advance
         safeTimeout(() => {
           setAnswerFlash(null);
@@ -276,7 +276,6 @@ export default function BossBattleSection({
           setShaking(true);
           setWrongQuestions((prev) => [...prev, question]);
           safeTimeout(() => setShaking(false), 300);
-          safeTimeout(() => setPlayerDamageShow(false), 800);
           advanceOrEnd(bossHp, newPlayerHp);
         }, 600);
       }
@@ -536,7 +535,10 @@ export default function BossBattleSection({
               ))}
             </div>
 
-            {/* Answer flash feedback */}
+            {/* Answer flash feedback — cleared at 600ms; advanceOrEnd delays
+                question change by 1200ms, so flash is always gone before
+                AnimatePresence mode="wait" exits. If advance timing changes,
+                move this outside the AnimatePresence block. */}
             <AnimatePresence>
               {answerFlash && (
                 <motion.div
@@ -565,8 +567,9 @@ export default function BossBattleSection({
         <div className="flex items-center gap-2">
           <PlayerHearts current={playerHp} max={boss.playerMaxHp} />
           <AnimatePresence>
-            {playerDamageShow && (
+            {playerDamageCount > 0 && (
               <motion.span
+                key={playerDamageCount}
                 initial={{ opacity: 1, y: 0 }}
                 animate={{ opacity: 0, y: -20 }}
                 exit={{ opacity: 0 }}
