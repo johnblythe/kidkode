@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0] - 2026-03-07
+
+### Added
+- Lesson 3: Terminal Basics — pwd/ls/cd/mkdir/touch/rm with Permission Denied Golem boss (#16)
+- Lesson 4: Client vs Server — request/response cycle, HTTP verbs, status codes with The 404 Phantom boss (#17)
+- Lesson 5: Databases — CRUD, SQL basics, tables with The Null Pointer boss (#18)
+- Lesson 6: Sync vs Async — blocking, promises, async/await with Callback Serpent boss (#19)
+- Lesson 7: Asking AI — CRISP framework, prompt engineering, hallucinations with Hallucination Phantom boss (#20)
+- TypeCommandStep component — fake terminal UI for command-line exercises
+- FillBlankStep component — inline blank inputs with per-blank validation for SQL exercises
+- 5 new SVG boss sprites: PermissionDeniedGolem, The404Phantom, TheNullPointer, CallbackSerpent, HallucinationPhantom
+
+### Changed
+- Refined TypeCommandInteractiveStep and FillBlankInteractiveStep type interfaces with proper typed data/solution fields
+- InteractiveExercise renderStep() now handles all 5 step types with exhaustive switch
+
 ## [0.5.1] - 2026-03-06
 
 ### Changed

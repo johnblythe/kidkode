@@ -53,14 +53,26 @@ export interface MultipleChoiceInteractiveStep extends InteractiveStepBase {
 
 export interface TypeCommandInteractiveStep extends InteractiveStepBase {
   type: "type-command";
-  data: Record<string, unknown>;
-  solution: unknown;
+  data: {
+    prompt: string;
+    expectedOutput?: string;
+    caseSensitive?: boolean;
+    acceptAlternatives?: string[];
+  };
+  solution: string;
 }
 
 export interface FillBlankInteractiveStep extends InteractiveStepBase {
   type: "fill-blank";
-  data: Record<string, unknown>;
-  solution: unknown;
+  data: {
+    /** Text template. Use ___ (triple underscore) to mark blank positions. Count must equal blanks.length. */
+    template: string;
+    blanks: Array<{ id: string; placeholder?: string; width?: number }>;
+    filename?: string;
+    caseSensitive?: boolean;
+  };
+  /** Keyed by blank `id`. Each value is a single accepted answer or array of alternatives. */
+  solution: Record<string, string | string[]>;
 }
 
 export type InteractiveStep =
