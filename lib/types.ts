@@ -53,14 +53,22 @@ export interface MultipleChoiceInteractiveStep extends InteractiveStepBase {
 
 export interface TypeCommandInteractiveStep extends InteractiveStepBase {
   type: "type-command";
-  data: Record<string, unknown>;
-  solution: unknown;
+  data: {
+    prompt: string;
+    expectedOutput?: string;
+    caseSensitive?: boolean;
+    acceptAlternatives?: string[];
+  };
+  solution: string;
 }
 
 export interface FillBlankInteractiveStep extends InteractiveStepBase {
   type: "fill-blank";
-  data: Record<string, unknown>;
-  solution: unknown;
+  data: {
+    template: string; // use ___ as blank delimiters
+    blanks: Array<{ id: string; placeholder?: string; width?: number }>;
+  };
+  solution: Record<string, string | string[]>;
 }
 
 export type InteractiveStep =

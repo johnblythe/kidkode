@@ -2,8 +2,10 @@
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { InteractiveSection, InteractiveStep, SequenceInteractiveStep, MultipleChoiceInteractiveStep } from "@/lib/types";
+import type { InteractiveSection, InteractiveStep, SequenceInteractiveStep, MultipleChoiceInteractiveStep, TypeCommandInteractiveStep, FillBlankInteractiveStep } from "@/lib/types";
 import DragDropStep from "@/components/DragDropStep";
+import TypeCommandStep from "@/components/TypeCommandStep";
+import FillBlankStep from "@/components/FillBlankStep";
 import { useAudio } from "@/lib/audio/AudioContext";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 
@@ -368,10 +370,15 @@ function renderStep(step: InteractiveStep, onStepComplete: () => void) {
       return <MultipleChoiceStep step={step} onStepComplete={onStepComplete} />;
     case "drag-drop":
       return <DragDropStep scenario={step.data} onStepComplete={onStepComplete} />;
-    default:
+    case "type-command":
+      return <TypeCommandStep step={step} onStepComplete={onStepComplete} />;
+    case "fill-blank":
+      return <FillBlankStep step={step} onStepComplete={onStepComplete} />;
+    default: {
+      const _exhaustive: never = step;
       return (
         <div>
-          <p className="text-slate-200 mb-4">{step.instruction}</p>
+          <p className="text-slate-200 mb-4">Unknown step type</p>
           <button
             onClick={onStepComplete}
             className="px-6 py-2.5 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg"
@@ -380,6 +387,7 @@ function renderStep(step: InteractiveStep, onStepComplete: () => void) {
           </button>
         </div>
       );
+    }
   }
 }
 
