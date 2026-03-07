@@ -168,6 +168,8 @@ export default function BossBattleSection({
   const [wrongQuestions, setWrongQuestions] = useState<QuizQuestion[]>([]);
   const [actionLocked, setActionLocked] = useState(false);
   const [showHitExplosion, setShowHitExplosion] = useState(false);
+  const [answerFlash, setAnswerFlash] = useState<"correct" | "wrong" | null>(null);
+  const [playerDamageCount, setPlayerDamageCount] = useState(0);
   const correctCountRef = useRef(0);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -243,30 +245,39 @@ export default function BossBattleSection({
       const isCorrect = selectedIdx === correctIdx;
 
       if (isCorrect) {
-        // Player attack hits boss
-        sfx("boss-hit");
-        setShowHitExplosion(true);
-        setSpriteState("damaged");
+        // Flash correct feedback + apply HP immediately so bar animates
+        setAnswerFlash("correct");
         const newBossHp = Math.max(0, bossHp - boss.damagePerCorrect);
         setBossHp(newBossHp);
         setDamageShow(boss.damagePerCorrect);
         correctCountRef.current += 1;
         setCorrectCount(correctCountRef.current);
-        safeTimeout(() => setShowHitExplosion(false), 500);
-        safeTimeout(() => setDamageShow(null), 800);
-        advanceOrEnd(newBossHp, playerHp);
-      } else {
-        // Fizzle → boss counterattack
-        sfx("wrong-buzz");
+        // Delay hit VFX and advance
         safeTimeout(() => {
+          setAnswerFlash(null);
+          sfx("boss-hit");
+          setShowHitExplosion(true);
+          setSpriteState("damaged");
+          safeTimeout(() => setShowHitExplosion(false), 500);
+          safeTimeout(() => setDamageShow(null), 800);
+          advanceOrEnd(newBossHp, playerHp);
+        }, 600);
+      } else {
+        // Flash wrong feedback + apply HP loss immediately
+        setAnswerFlash("wrong");
+        sfx("wrong-buzz");
+        const newPlayerHp = playerHp - 1;
+        setPlayerHp(newPlayerHp);
+        setPlayerDamageCount((c) => c + 1);
+        // Delay boss attack VFX and advance
+        safeTimeout(() => {
+          setAnswerFlash(null);
           setSpriteState("attacking");
           setShaking(true);
-          const newPlayerHp = playerHp - 1;
-          setPlayerHp(newPlayerHp);
           setWrongQuestions((prev) => [...prev, question]);
           safeTimeout(() => setShaking(false), 300);
           advanceOrEnd(bossHp, newPlayerHp);
-        }, 400);
+        }, 600);
       }
     },
     [
@@ -332,6 +343,7 @@ export default function BossBattleSection({
 
   // ── VICTORY ──
   if (phase === "victory") {
+    const bossKilled = bossHp <= 0;
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -345,7 +357,7 @@ export default function BossBattleSection({
           className="text-5xl font-black text-gold mb-4"
           style={{ textShadow: "0 0 30px rgba(251,191,36,0.6)" }}
         >
-          BOSS DEFEATED!
+          {bossKilled ? "BOSS DEFEATED!" : "QUEST PASSED!"}
         </motion.h2>
         <motion.p
           initial={{ opacity: 0, y: 10 }}
@@ -353,7 +365,7 @@ export default function BossBattleSection({
           transition={{ delay: 0.4 }}
           className="text-xl text-hp-green-bright mb-2"
         >
-          {boss.defeatText}
+          {bossKilled ? boss.defeatText : "You survived the battle and proved your knowledge!"}
         </motion.p>
         <motion.p
           initial={{ opacity: 0 }}
@@ -421,17 +433,22 @@ export default function BossBattleSection({
             </motion.div>
           )}
 
-          <motion.button
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.2 }}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => onStudyUp(0)}
-            className="px-8 py-3 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg text-lg shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] transition-shadow"
+            className="flex flex-col items-center gap-2"
           >
-            Study Up!
-          </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => onStudyUp(0)}
+              className="px-8 py-3 bg-gradient-to-r from-gold-dim to-gold text-void font-bold rounded-lg text-lg shadow-[0_0_20px_rgba(251,191,36,0.3)] hover:shadow-[0_0_30px_rgba(251,191,36,0.5)] transition-shadow"
+            >
+              Review & Retry
+            </motion.button>
+            <span className="text-xs text-slate-500">Go back to the lesson material, then try again</span>
+          </motion.div>
         </div>
       </motion.div>
     );
@@ -517,16 +534,53 @@ export default function BossBattleSection({
                 />
               ))}
             </div>
+
+            {/* Answer flash feedback — cleared at 600ms; advanceOrEnd delays
+                question change by 1200ms, so flash is always gone before
+                AnimatePresence mode="wait" exits. If advance timing changes,
+                move this outside the AnimatePresence block. */}
+            <AnimatePresence>
+              {answerFlash && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className={`mt-3 p-2 rounded-lg text-center text-sm font-bold ${
+                    answerFlash === "correct"
+                      ? "bg-hp-green/10 border border-hp-green/40 text-hp-green-bright"
+                      : "bg-fire-red/10 border border-fire-red/40 text-fire-red"
+                  }`}
+                >
+                  {answerFlash === "correct" ? "Correct! Your attack lands!" : "Wrong! The boss strikes back!"}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         </AnimatePresence>
       </div>
 
       {/* Player HP */}
-      <div className="rpg-card p-4 flex items-center justify-between">
+      <div className="rpg-card p-4 flex items-center justify-between relative">
         <span className="text-sm font-bold text-slate-400 uppercase tracking-wider">
           Your HP
         </span>
-        <PlayerHearts current={playerHp} max={boss.playerMaxHp} />
+        <div className="flex items-center gap-2">
+          <PlayerHearts current={playerHp} max={boss.playerMaxHp} />
+          <AnimatePresence>
+            {playerDamageCount > 0 && (
+              <motion.span
+                key={playerDamageCount}
+                initial={{ opacity: 1, y: 0 }}
+                animate={{ opacity: 0, y: -20 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.6 }}
+                className="text-fire-red font-black text-lg absolute -top-2 right-4"
+              >
+                -1
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );

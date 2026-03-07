@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import React from "react";
 import type { SlideSection } from "@/lib/types";
@@ -12,6 +12,16 @@ import { inlineFormat } from "@/lib/markdown-utils";
 interface SlideViewerProps {
   section: SlideSection;
   onComplete: () => void;
+}
+
+function dotStyle(i: number, currentFrame: number): string {
+  if (i === currentFrame) {
+    return "bg-gold scale-125 shadow-[0_0_8px_rgba(251,191,36,0.5)]";
+  }
+  if (i < currentFrame) {
+    return "bg-gold-dim group-hover:bg-gold/60";
+  }
+  return "bg-void-lighter border border-gold-dim/30 group-hover:border-gold-dim/60";
 }
 
 function renderContent(text: string): React.ReactNode {
@@ -26,26 +36,44 @@ function renderContent(text: string): React.ReactNode {
 function TypewriterText({ text, speed = 30 }: { text: string; speed?: number }) {
   const [displayed, setDisplayed] = useState("");
   const [done, setDone] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     setDisplayed("");
     setDone(false);
     let idx = 0;
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       idx++;
       setDisplayed(text.slice(0, idx));
       if (idx >= text.length) {
-        clearInterval(interval);
+        clearInterval(intervalRef.current!);
+        intervalRef.current = null;
         setDone(true);
       }
     }, speed);
-    return () => clearInterval(interval);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, [text, speed]);
+
+  const skip = () => {
+    if (!done) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      setDone(true);
+    }
+  };
 
   if (done) {
     return <>{renderContent(text)}</>;
   }
-  return <span className="text-slate-200">{displayed}<span className="animate-pulse text-gold">|</span></span>;
+  return (
+    <span className="text-slate-200 cursor-pointer" onClick={skip} title="Click to skip">
+      {displayed}<span className="animate-pulse text-gold">|</span>
+    </span>
+  );
 }
 
 export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
@@ -144,15 +172,13 @@ export default function SlideViewer({ section, onComplete }: SlideViewerProps) {
           <button
             key={i}
             onClick={() => setCurrentFrame(i)}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
-              i === currentFrame
-                ? "bg-gold scale-125 shadow-[0_0_8px_rgba(251,191,36,0.5)]"
-                : i < currentFrame
-                ? "bg-gold-dim"
-                : "bg-void-lighter border border-gold-dim/30"
-            }`}
+            className="p-1.5 -m-1.5 group"
             aria-label={`Go to slide ${i + 1}`}
-          />
+          >
+            <div
+              className={`w-3.5 h-3.5 rounded-full transition-all duration-300 ${dotStyle(i, currentFrame)}`}
+            />
+          </button>
         ))}
       </div>
 

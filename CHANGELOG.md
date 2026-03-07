@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.1] - 2026-03-06
+
+### Changed
+- Boss battle: "Study Up!" → "Review & Retry" with subtitle explaining it returns to lesson material (#14)
+- Boss victory: differentiate "BOSS DEFEATED!" (boss killed) vs "QUEST PASSED!" (survived with score) (#14)
+- Boss battle: added answer flash feedback ("Correct! Your attack lands!" / "Wrong! The boss strikes back!") before damage resolves (#14)
+- Boss battle: added floating "-1" damage indicator on player HP when boss counterattacks (#14)
+- Interactive multiple-choice: wrong answer now explicitly shows the correct answer text instead of "highlighted in green" (#14)
+- Slide nav dots: increased from 12px → 14px with larger 18px touch padding and hover states (#14)
+- Typewriter slide animation: click-to-skip so kids aren't stuck waiting (#14)
+- Reading section: increased max-height from 60vh → 70vh for less cramped scrolling (#14)
+
 ## [0.5.0] - 2026-03-05
 
 ### Added

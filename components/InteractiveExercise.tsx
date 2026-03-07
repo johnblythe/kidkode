@@ -302,9 +302,12 @@ function MultipleChoiceStep({
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-4 p-3 rounded-lg bg-fire-red/10 border border-fire-red/40 text-fire-red text-center"
+            className="mb-4 p-3 rounded-lg bg-fire-red/10 border border-fire-red/40 text-center"
           >
-            Not quite. The right answer was highlighted in green.
+            <p className="text-fire-red font-bold mb-1">Not quite!</p>
+            <p className="text-slate-300 text-sm">
+              The correct answer is: <span className="text-hp-green-bright font-bold">{data.options[correctIndex]}</span>
+            </p>
           </motion.div>
         )}
       </AnimatePresence>
