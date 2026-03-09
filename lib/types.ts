@@ -134,16 +134,20 @@ export interface Lesson {
 
 export interface LessonProgress {
   slug: string;
-  status: "locked" | "available" | "in-progress" | "completed";
+  status: "locked" | "available" | "in_progress" | "completed";
   completedAt?: string; // ISO date
   quizScore?: number;
   xpEarned?: number;
   attempts: number;
-  sectionProgress: number; // index of current section
+  sectionProgress: number; // index of current section (maps to DB column section_index)
 }
 
 export interface PlayerProfile {
+  id: string;
+  email: string;
   name: string;
+  heroClass: string;
+  role: "parent" | "child";
   level: number;
   xp: number;
   xpToNextLevel: number;
@@ -153,6 +157,30 @@ export interface PlayerProfile {
   unlockedToday: boolean;
   lessons: Record<string, LessonProgress>;
 }
+
+// Session stored in localStorage — login credentials, separate from game stats
+export interface UserSession {
+  userId: string;
+  email: string;
+  role: "parent" | "child";
+}
+
+// Return type for lookupUser — discriminated union (not PlayerProfile | null)
+export type LookupResult =
+  | { found: true; profile: PlayerProfile; session: UserSession }
+  | { found: false };
+
+// Return type for completeLesson Server Action
+export interface LessonCompletionResult {
+  level: number;
+  streak: number;
+}
+
+// Narrowed patch type for updateLessonProgress — only fields safe to update mid-session
+export type LessonProgressPatch = Partial<Pick<LessonProgress, "sectionProgress" | "status">>;
+
+// Hero class names (matches DB CHECK constraint in migration 001)
+export type HeroClass = "wizard" | "knight" | "elf" | "ninja" | "hero" | "merfolk";
 
 // XP thresholds per level
 export const XP_PER_LEVEL = [

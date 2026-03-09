@@ -5,3 +5,6 @@ out
 *.tsbuildinfo
 .claude/
 context/
+tmp/
+.env.local
+.env*.local
