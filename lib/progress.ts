@@ -189,15 +189,16 @@ export async function completeLesson(
   if (progressError) throw new Error(progressError.message);
 
   if (!alreadyCompleted) {
-    const { error: xpError } = await supabase.rpc("award_xp", {
-      p_user_id: userId,
-      p_amount: xp,
-      p_reason: "lesson_complete",
-      p_lesson: slug,
-    });
-    if (xpError) throw new Error(xpError.message);
-
-    await updateStreak(userId);
+    const [xpResult] = await Promise.all([
+      supabase.rpc("award_xp", {
+        p_user_id: userId,
+        p_amount: xp,
+        p_reason: "lesson_complete",
+        p_lesson: slug,
+      }),
+      updateStreak(userId),
+    ]);
+    if (xpResult.error) throw new Error(xpResult.error.message);
   }
 
   await unlockNextLesson(userId, slug);

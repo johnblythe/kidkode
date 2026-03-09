@@ -20,6 +20,15 @@ export function useActiveUser(): ActiveUser {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    const expiry = localStorage.getItem(STORAGE_KEYS.sessionExpiry);
+    if (expiry && Date.now() > Number(expiry)) {
+      // Session expired — clear it
+      localStorage.removeItem(STORAGE_KEYS.activeUserId);
+      localStorage.removeItem(STORAGE_KEYS.activeEmail);
+      localStorage.removeItem(STORAGE_KEYS.sessionExpiry);
+      setMounted(true);
+      return;
+    }
     setUserId(localStorage.getItem(STORAGE_KEYS.activeUserId));
     setEmail(localStorage.getItem(STORAGE_KEYS.activeEmail));
     setMounted(true);
@@ -28,6 +37,7 @@ export function useActiveUser(): ActiveUser {
   function signIn(id: string, em: string) {
     localStorage.setItem(STORAGE_KEYS.activeUserId, id);
     localStorage.setItem(STORAGE_KEYS.activeEmail, em);
+    localStorage.setItem(STORAGE_KEYS.sessionExpiry, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
     setUserId(id);
     setEmail(em);
   }
@@ -35,6 +45,7 @@ export function useActiveUser(): ActiveUser {
   function signOut() {
     localStorage.removeItem(STORAGE_KEYS.activeUserId);
     localStorage.removeItem(STORAGE_KEYS.activeEmail);
+    localStorage.removeItem(STORAGE_KEYS.sessionExpiry);
     localStorage.removeItem(STORAGE_KEYS.legacyProgress);
     setUserId(null);
     setEmail(null);

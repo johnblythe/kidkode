@@ -18,6 +18,9 @@ import { lessons } from "@/content/lessons";
 export async function lookupUser(rawEmail: string): Promise<LookupResult> {
   const email = rawEmail.trim().toLowerCase();
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) throw new Error("INVALID_EMAIL");
+
   const { data, error } = await supabase
     .from("users")
     .select("id, email, hero_name, hero_class, role")
@@ -53,12 +56,17 @@ export async function createUser(input: {
 }): Promise<PlayerProfile> {
   const email = input.email.trim().toLowerCase();
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) throw new Error("INVALID_EMAIL");
+  const heroName = input.heroName.trim();
+  if (!heroName || heroName.length > 20) throw new Error("INVALID_HERO_NAME");
+
   // Insert user
   const { data: user, error: userError } = await supabase
     .from("users")
     .insert({
       email,
-      hero_name: input.heroName,
+      hero_name: heroName,
       hero_class: input.heroClass,
       role: input.role,
     })
@@ -111,10 +119,16 @@ export async function createChild(
   const firstLesson = [...lessons].sort((a, b) => a.order - b.order)[0];
   if (!firstLesson) throw new Error("No lessons defined");
 
+  const email = input.email.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) throw new Error("INVALID_EMAIL");
+  const heroName = input.heroName.trim();
+  if (!heroName || heroName.length > 20) throw new Error("INVALID_HERO_NAME");
+
   const { data: childId, error } = await supabase.rpc("create_child", {
     p_parent_id: parentId,
-    p_email: input.email.trim().toLowerCase(),
-    p_hero_name: input.heroName,
+    p_email: email,
+    p_hero_name: heroName,
     p_hero_class: input.heroClass,
     p_lesson_slug: firstLesson.slug,
   });
