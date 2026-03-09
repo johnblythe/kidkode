@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useActiveUser } from "@/lib/hooks/useActiveUser";
 import { listChildren, createChild } from "@/app/actions/users";
+import { getProfile } from "@/app/actions/progress";
 import type { PlayerProfile, HeroClass } from "@/lib/types";
 
 const CHARACTER_CLASSES: { emoji: string; label: string; value: HeroClass }[] =
@@ -36,6 +37,12 @@ export default function ParentPage() {
       return;
     }
     startTransition(async () => {
+      // Verify user exists and has parent role before showing dashboard
+      const profile = await getProfile(userId);
+      if (!profile || profile.role !== "parent") {
+        router.replace("/");
+        return;
+      }
       const kids = await listChildren(userId);
       setChildren(kids);
     });

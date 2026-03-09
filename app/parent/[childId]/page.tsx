@@ -4,8 +4,7 @@ import { useState, useEffect, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useActiveUser } from "@/lib/hooks/useActiveUser";
-import { getProfile } from "@/app/actions/progress";
-import { forceUnlockLesson } from "@/app/actions/users";
+import { getChildProfileForParent, forceUnlockLesson } from "@/app/actions/users";
 import { lessons } from "@/content/lessons";
 import type { PlayerProfile } from "@/lib/types";
 
@@ -25,15 +24,21 @@ export default function ChildDetailPage() {
       return;
     }
     startTransition(async () => {
-      const p = await getProfile(childId);
-      setProfile(p);
+      try {
+        const p = await getChildProfileForParent(userId, childId);
+        setProfile(p);
+      } catch {
+        // Unauthorized or not found — redirect to parent dashboard
+        router.replace("/parent");
+      }
     });
   }, [mounted, userId, childId, router]);
 
   function handleForceUnlock() {
+    if (!userId) return;
     startTransition(async () => {
-      await forceUnlockLesson(childId);
-      const p = await getProfile(childId);
+      await forceUnlockLesson(userId, childId);
+      const p = await getChildProfileForParent(userId, childId);
       setProfile(p);
       setJustUnlocked(true);
     });

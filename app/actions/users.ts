@@ -190,10 +190,44 @@ export async function listChildren(parentId: string): Promise<PlayerProfile[]> {
 }
 
 // ============================================================
+// getChildProfileForParent — ownership-checked child profile read
+// ============================================================
+
+export async function getChildProfileForParent(
+  parentId: string,
+  childId: string
+): Promise<PlayerProfile | null> {
+  // Verify parentId actually owns childId before returning data
+  const { data } = await supabase
+    .from("users")
+    .select("parent_id")
+    .eq("id", childId)
+    .maybeSingle();
+
+  if (!data || data.parent_id !== parentId) {
+    throw new Error("UNAUTHORIZED");
+  }
+  return getProfile(childId);
+}
+
+// ============================================================
 // forceUnlockLesson — parent override (no time gate)
 // ============================================================
 
-export async function forceUnlockLesson(childId: string): Promise<void> {
+export async function forceUnlockLesson(
+  parentId: string,
+  childId: string
+): Promise<void> {
+  // Verify caller is the child's parent before modifying
+  const { data: child } = await supabase
+    .from("users")
+    .select("parent_id")
+    .eq("id", childId)
+    .maybeSingle();
+
+  if (!child || child.parent_id !== parentId) {
+    throw new Error("UNAUTHORIZED");
+  }
   const sortedLessons = [...lessons].sort((a, b) => a.order - b.order);
 
   // Find the highest completed lesson

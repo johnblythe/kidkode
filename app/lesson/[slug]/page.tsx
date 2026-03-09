@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useTransition } from "react";
+import { useState, useEffect, useCallback, useTransition, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getLessonBySlug } from "@/content/lessons";
@@ -51,6 +51,9 @@ export default function LessonPlayerPage() {
   });
   const [notFound, setNotFound] = useState(false);
   const [, startTransition] = useTransition();
+  const [, startSaveTransition] = useTransition();
+  // Debounce ref: prevent out-of-order sectionProgress writes from rapid navigation
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load lesson + restore progress from DB
   useEffect(() => {
@@ -80,16 +83,22 @@ export default function LessonPlayerPage() {
     });
   }, [slug, mounted, userId, router]);
 
-  // Save section progress on change + crossfade BGM
+  // Save section progress on change (debounced) + crossfade BGM
   useEffect(() => {
     if (!lesson || !userId) return;
 
+    // Debounce: cancel any pending save and schedule a new one.
+    // This prevents out-of-order writes when the user navigates sections quickly.
     if (currentSection > 0) {
-      startTransition(async () => {
-        await updateLessonProgress(userId, slug, {
-          sectionProgress: currentSection,
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      const sectionToSave = currentSection;
+      saveTimerRef.current = setTimeout(() => {
+        startSaveTransition(async () => {
+          await updateLessonProgress(userId, slug, {
+            sectionProgress: sectionToSave,
+          });
         });
-      });
+      }, 500);
     }
 
     const sec = lesson.sections[currentSection];
@@ -98,6 +107,10 @@ export default function LessonPlayerPage() {
     } else {
       playBGM("lesson-ambient");
     }
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
   }, [currentSection, lesson, slug, userId, playBGM]);
 
   const handleSectionComplete = useCallback(() => {
