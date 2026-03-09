@@ -61,47 +61,25 @@ export async function createUser(input: {
   const heroName = input.heroName.trim();
   if (!heroName || heroName.length > 20) throw new Error("INVALID_HERO_NAME");
 
-  // Insert user
-  const { data: user, error: userError } = await supabase
-    .from("users")
-    .insert({
-      email,
-      hero_name: heroName,
-      hero_class: input.heroClass,
-      role: input.role,
-    })
-    .select("id, email, hero_name, hero_class, role")
-    .single();
-
-  if (userError) {
-    if (userError.code === "23505") {
-      throw new Error("EMAIL_EXISTS");
-    }
-    throw new Error(userError.message);
-  }
-
-  // Insert character_stats
-  const { error: statsError } = await supabase
-    .from("character_stats")
-    .insert({ user_id: user.id });
-
-  if (statsError) {
-    // Clean up orphaned user row on partial failure
-    await supabase.from("users").delete().eq("id", user.id);
-    throw new Error(statsError.message);
-  }
-
-  // Seed first lesson as available
   const firstLesson = [...lessons].sort((a, b) => a.order - b.order)[0];
-  if (firstLesson) {
-    await supabase.from("lesson_progress").insert({
-      user_id: user.id,
-      lesson_slug: firstLesson.slug,
-      status: "available",
-    });
+  if (!firstLesson) throw new Error("No lessons defined");
+
+  // Atomic via create_parent() DB function (handles both roles via p_role param).
+  const { data: newUserId, error } = await supabase.rpc("create_parent", {
+    p_email: email,
+    p_hero_name: heroName,
+    p_hero_class: input.heroClass,
+    p_lesson_slug: firstLesson.slug,
+    p_role: input.role,
+  });
+
+  if (error) {
+    if (error.code === "23505") throw new Error("EMAIL_EXISTS");
+    throw new Error(error.message);
   }
 
-  return makeEmptyProfile(user.id, user.email);
+  const profile = await getProfile(newUserId as string);
+  return profile ?? makeEmptyProfile(newUserId as string, email);
 }
 
 // ============================================================

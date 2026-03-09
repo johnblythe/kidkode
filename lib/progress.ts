@@ -163,15 +163,6 @@ export async function completeLesson(
   score: number,
   xp: number
 ): Promise<LessonCompletionResult> {
-  const { data: existing } = await supabase
-    .from("lesson_progress")
-    .select("status")
-    .eq("user_id", userId)
-    .eq("lesson_slug", slug)
-    .maybeSingle();
-
-  const alreadyCompleted = existing?.status === "completed";
-
   const { error: progressError } = await supabase
     .from("lesson_progress")
     .upsert(
@@ -188,18 +179,18 @@ export async function completeLesson(
     );
   if (progressError) throw new Error(progressError.message);
 
-  if (!alreadyCompleted) {
-    const [xpResult] = await Promise.all([
-      supabase.rpc("award_xp", {
-        p_user_id: userId,
-        p_amount: xp,
-        p_reason: "lesson_complete",
-        p_lesson: slug,
-      }),
-      updateStreak(userId),
-    ]);
-    if (xpResult.error) throw new Error(xpResult.error.message);
-  }
+  // award_xp is idempotent via partial unique indexes (migration 004).
+  // No existence pre-check needed — DB rejects duplicates atomically.
+  const [xpResult] = await Promise.all([
+    supabase.rpc("award_xp", {
+      p_user_id: userId,
+      p_amount: xp,
+      p_reason: "lesson_complete",
+      p_lesson: slug,
+    }),
+    updateStreak(userId),
+  ]);
+  if (xpResult.error) throw new Error(xpResult.error.message);
 
   await unlockNextLesson(userId, slug);
 
@@ -230,14 +221,8 @@ async function updateStreak(userId: string): Promise<void> {
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayStr = yesterday.toISOString().split("T")[0];
 
-  let newStreak: number;
-  if (stats.last_session_date === yesterdayStr) {
-    newStreak = stats.streak_days + 1;
-  } else if (!stats.last_session_date) {
-    newStreak = 1;
-  } else {
-    newStreak = 1;
-  }
+  const newStreak =
+    stats.last_session_date === yesterdayStr ? stats.streak_days + 1 : 1;
 
   const { error } = await supabase
     .from("character_stats")

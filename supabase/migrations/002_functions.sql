@@ -19,11 +19,15 @@ BEGIN
   IF p_lesson IS NOT NULL THEN
     INSERT INTO public.xp_transactions (user_id, amount, reason, lesson_slug)
     VALUES (p_user_id, p_amount, p_reason, p_lesson)
-    ON CONFLICT ON CONSTRAINT uq_xp_with_lesson DO NOTHING;
+    ON CONFLICT (user_id, lesson_slug, reason)
+    WHERE lesson_slug IS NOT NULL
+    DO NOTHING;
   ELSE
     INSERT INTO public.xp_transactions (user_id, amount, reason, lesson_slug)
     VALUES (p_user_id, p_amount, p_reason, NULL)
-    ON CONFLICT ON CONSTRAINT uq_xp_no_lesson DO NOTHING;
+    ON CONFLICT (user_id, reason)
+    WHERE lesson_slug IS NULL
+    DO NOTHING;
   END IF;
 
   IF NOT FOUND THEN
