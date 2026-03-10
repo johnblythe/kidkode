@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useTransition, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { getLessonBySlug } from "@/content/lessons";
 import {
-  getLessonProgress,
+  getProfile,
   updateLessonProgress,
   completeLesson,
-} from "@/lib/progress";
+} from "@/app/actions/progress";
+import { useActiveUser } from "@/lib/hooks/useActiveUser";
 import type { Lesson, LessonSection } from "@/lib/types";
 import { useAudio } from "@/lib/audio/AudioContext";
 import VolumeToggle from "@/components/VolumeToggle";
@@ -37,16 +38,31 @@ export default function LessonPlayerPage() {
   const params = useParams();
   const router = useRouter();
   const { sfx, playBGM } = useAudio();
+  const { userId, mounted } = useActiveUser();
   const slug = params.slug as string;
 
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [currentSection, setCurrentSection] = useState(0);
   const [showUnlock, setShowUnlock] = useState(false);
-  const [unlockData, setUnlockData] = useState({ xpEarned: 0, newLevel: 1, streak: 0 });
+  const [unlockData, setUnlockData] = useState({
+    xpEarned: 0,
+    newLevel: 1,
+    streak: 0,
+  });
   const [notFound, setNotFound] = useState(false);
+  const [, startTransition] = useTransition();
+  const [, startSaveTransition] = useTransition();
+  // Debounce ref: prevent out-of-order sectionProgress writes from rapid navigation
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load lesson and restore progress
+  // Load lesson + restore progress from DB
   useEffect(() => {
+    if (!mounted) return;
+    if (!userId) {
+      router.replace("/login");
+      return;
+    }
+
     const found = getLessonBySlug(slug);
     if (!found) {
       setNotFound(true);
@@ -54,30 +70,48 @@ export default function LessonPlayerPage() {
     }
     setLesson(found);
 
-    // Restore section progress
-    const progress = getLessonProgress(slug);
-    if (progress.sectionProgress > 0 && progress.status !== "completed") {
-      setCurrentSection(progress.sectionProgress);
-    }
-
-    // Mark as in-progress
-    updateLessonProgress(slug, { status: "in-progress" });
-  }, [slug]);
-
-  // Save section progress on change + crossfade BGM
-  useEffect(() => {
-    if (lesson && currentSection > 0) {
-      updateLessonProgress(slug, { sectionProgress: currentSection });
-    }
-    if (lesson) {
-      const sec = lesson.sections[currentSection];
-      if (sec?.type === "quiz") {
-        playBGM("battle");
-      } else {
-        playBGM("lesson-ambient");
+    startTransition(async () => {
+      // Restore section progress
+      const profile = await getProfile(userId);
+      const lp = profile?.lessons[slug];
+      if (lp && lp.sectionProgress > 0 && lp.status !== "completed") {
+        setCurrentSection(lp.sectionProgress);
       }
+
+      // Mark as in_progress
+      await updateLessonProgress(userId, slug, { status: "in_progress" });
+    });
+  }, [slug, mounted, userId, router]);
+
+  // Save section progress on change (debounced) + crossfade BGM
+  useEffect(() => {
+    if (!lesson || !userId) return;
+
+    // Debounce: cancel any pending save and schedule a new one.
+    // This prevents out-of-order writes when the user navigates sections quickly.
+    if (currentSection > 0) {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      const sectionToSave = currentSection;
+      saveTimerRef.current = setTimeout(() => {
+        startSaveTransition(async () => {
+          await updateLessonProgress(userId, slug, {
+            sectionProgress: sectionToSave,
+          });
+        });
+      }, 500);
     }
-  }, [currentSection, lesson, slug, playBGM]);
+
+    const sec = lesson.sections[currentSection];
+    if (sec?.type === "quiz") {
+      playBGM("battle");
+    } else {
+      playBGM("lesson-ambient");
+    }
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [currentSection, lesson, slug, userId, playBGM]);
 
   const handleSectionComplete = useCallback(() => {
     if (!lesson) return;
@@ -89,17 +123,19 @@ export default function LessonPlayerPage() {
 
   const handleQuizComplete = useCallback(
     (score: number) => {
-      if (!lesson) return;
-      const profile = completeLesson(slug, score, lesson.xpReward);
-      sfx("unlock-celebration");
-      setUnlockData({
-        xpEarned: lesson.xpReward,
-        newLevel: profile.level,
-        streak: profile.streak,
+      if (!lesson || !userId) return;
+      startTransition(async () => {
+        const result = await completeLesson(userId, slug, score, lesson.xpReward);
+        sfx("unlock-celebration");
+        setUnlockData({
+          xpEarned: lesson.xpReward,
+          newLevel: result.level,
+          streak: result.streak,
+        });
+        setShowUnlock(true);
       });
-      setShowUnlock(true);
     },
-    [lesson, slug]
+    [lesson, slug, userId, sfx]
   );
 
   // Not found
@@ -161,7 +197,9 @@ export default function LessonPlayerPage() {
           {/* Lesson title */}
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-lg">{lesson.icon}</span>
-            <h1 className="text-sm font-bold text-gold truncate">{lesson.title}</h1>
+            <h1 className="text-sm font-bold text-gold truncate">
+              {lesson.title}
+            </h1>
           </div>
 
           {/* Lesson timer + volume */}
@@ -189,11 +227,7 @@ export default function LessonPlayerPage() {
                         : "bg-void-lighter border border-gold-dim/20 text-slate-500"
                     }`}
                   >
-                    {i < currentSection ? (
-                      <span>&#10003;</span>
-                    ) : (
-                      i + 1
-                    )}
+                    {i < currentSection ? <span>&#10003;</span> : i + 1}
                   </div>
                   {/* Tooltip */}
                   <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
@@ -238,7 +272,10 @@ export default function LessonPlayerPage() {
             className="w-full"
           >
             {section.type === "slides" && (
-              <SlideViewer section={section} onComplete={handleSectionComplete} />
+              <SlideViewer
+                section={section}
+                onComplete={handleSectionComplete}
+              />
             )}
             {section.type === "reading" && (
               <ReadingSectionComponent

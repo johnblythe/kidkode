@@ -1,17 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { lessons } from "@/content/lessons";
-import {
-  getProfile,
-  resetDailyUnlock,
-  updateLessonProgress,
-  hasCustomName,
-} from "@/lib/progress";
+import { loadDashboard } from "@/app/actions/progress";
+import { useActiveUser } from "@/lib/hooks/useActiveUser";
 import type { PlayerProfile, LessonProgress } from "@/lib/types";
-import HeroNameSetup from "@/components/HeroNameSetup";
 import VolumeToggle from "@/components/VolumeToggle";
 import { useAudio } from "@/lib/audio/AudioContext";
 
@@ -41,7 +37,13 @@ function XpBar({ xp, xpToNextLevel }: { xp: number; xpToNextLevel: number }) {
   );
 }
 
-function PlayerHeader({ profile }: { profile: PlayerProfile }) {
+function PlayerHeader({
+  profile,
+  onSignOut,
+}: {
+  profile: PlayerProfile;
+  onSignOut: () => void;
+}) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -89,11 +91,17 @@ function PlayerHeader({ profile }: { profile: PlayerProfile }) {
           value={profile.xp}
           color="text-xp-purple-bright"
         />
-        <StatBox
-          label="Level"
-          value={profile.level}
-          color="text-gold"
-        />
+        <StatBox label="Level" value={profile.level} color="text-gold" />
+      </div>
+
+      {/* Sign out */}
+      <div className="mt-4 pt-3 border-t border-xp-purple-dim/10 text-right">
+        <button
+          onClick={onSignOut}
+          className="text-xs text-locked-text/60 hover:text-fire-red transition-colors"
+        >
+          Sign Out
+        </button>
       </div>
     </motion.div>
   );
@@ -160,7 +168,7 @@ function LessonNode({
   const { sfx } = useAudio();
   const isCompleted = progress.status === "completed";
   const isAvailable = progress.status === "available";
-  const isInProgress = progress.status === "in-progress";
+  const isInProgress = progress.status === "in_progress";
   const isLocked = progress.status === "locked";
   const isClickable = isAvailable || isInProgress || isCompleted;
 
@@ -174,7 +182,8 @@ function LessonNode({
   // Card style
   let cardClass = "rpg-card p-4 sm:p-5 flex gap-4 items-start relative";
   if (isCompleted) cardClass += " rpg-card-completed";
-  else if (isAvailable || isInProgress) cardClass += " rpg-card-available pulse-available";
+  else if (isAvailable || isInProgress)
+    cardClass += " rpg-card-available pulse-available";
   else cardClass += " rpg-card-locked";
 
   // Status icon
@@ -189,7 +198,9 @@ function LessonNode({
     statusIcon = (
       <div className="w-8 h-8 rounded-full bg-gold/20 border border-gold flex items-center justify-center text-lg relative">
         {lesson.icon}
-        <span className="torch-flame absolute -top-1 -right-1 text-[10px]">🔥</span>
+        <span className="torch-flame absolute -top-1 -right-1 text-[10px]">
+          🔥
+        </span>
       </div>
     );
   } else {
@@ -313,65 +324,38 @@ function LessonNode({
 
 export default function DashboardPage() {
   const { playBGM } = useAudio();
+  const router = useRouter();
+  const { userId, mounted, signOut } = useActiveUser();
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
-  const [needsName, setNeedsName] = useState<boolean | null>(null);
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
-    // Check if player has set a custom name
-    const named = hasCustomName();
-    setNeedsName(!named);
-
-    // If they haven't named themselves yet, don't load the full dashboard
-    if (!named) return;
-
-    loadDashboard();
-  }, []);
-
-  function loadDashboard() {
-    // Reset daily unlock if it's a new day
-    resetDailyUnlock();
-
-    // Load profile
-    let currentProfile = getProfile();
-
-    // Initialize first lesson as "available" if no progress exists
-    const firstLesson = lessons.find((l) => l.order === 1);
-    if (firstLesson) {
-      const hasAnyProgress = Object.keys(currentProfile.lessons).length > 0;
-      if (!hasAnyProgress) {
-        currentProfile = updateLessonProgress(firstLesson.slug, {
-          status: "available",
-        });
-      }
+    if (!mounted) return;
+    if (!userId) {
+      router.replace("/login");
+      return;
     }
 
-    // Auto-unlock next lesson after completed ones
-    const sortedLessons = [...lessons].sort((a, b) => a.order - b.order);
-    for (let i = 0; i < sortedLessons.length; i++) {
-      const lesson = sortedLessons[i];
-      const lp = currentProfile.lessons[lesson.slug];
-      if (lp?.status === "completed" && i + 1 < sortedLessons.length) {
-        const nextLesson = sortedLessons[i + 1];
-        const nextLp = currentProfile.lessons[nextLesson.slug];
-        if (!nextLp || nextLp.status === "locked") {
-          currentProfile = updateLessonProgress(nextLesson.slug, {
-            status: "available",
-          });
-        }
+    startTransition(async () => {
+      const p = await loadDashboard(userId);
+      if (!p) {
+        // Profile not found — clear stale session and redirect to login
+        signOut();
+        router.replace("/login");
+        return;
       }
-    }
+      setProfile(p);
+      playBGM("dashboard");
+    });
+  }, [mounted, userId, router, signOut, playBGM]);
 
-    setProfile(currentProfile);
-    playBGM("dashboard");
+  function handleSignOut() {
+    signOut();
+    router.push("/login");
   }
 
-  function handleNameSetupComplete() {
-    setNeedsName(false);
-    loadDashboard();
-  }
-
-  // Still determining whether name setup is needed
-  if (needsName === null) {
+  // Loading (before hydration or while fetching)
+  if (!mounted || !userId || (!profile && isPending)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <motion.div
@@ -385,25 +369,7 @@ export default function DashboardPage() {
     );
   }
 
-  // Show hero name setup for first-run
-  if (needsName) {
-    return <HeroNameSetup onComplete={handleNameSetupComplete} />;
-  }
-
-  // Dashboard loading
-  if (!profile) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-          className="text-4xl"
-        >
-          ⚔️
-        </motion.div>
-      </div>
-    );
-  }
+  if (!profile) return null;
 
   const sortedLessons = [...lessons].sort((a, b) => a.order - b.order);
 
@@ -424,10 +390,18 @@ export default function DashboardPage() {
         <p className="text-sm text-xp-purple-bright mt-2 tracking-widest uppercase">
           Level Up Your Coding Skills
         </p>
+        {profile.role === "parent" && (
+          <Link
+            href="/parent"
+            className="inline-block mt-2 text-xs text-locked-text hover:text-gold transition-colors border border-locked/40 hover:border-gold-dim px-3 py-1 rounded-full"
+          >
+            Parent Dashboard →
+          </Link>
+        )}
       </motion.div>
 
       {/* Player Header */}
-      <PlayerHeader profile={profile} />
+      <PlayerHeader profile={profile} onSignOut={handleSignOut} />
 
       {/* Unlock Banner */}
       <UnlockBanner unlocked={profile.unlockedToday} />
@@ -476,20 +450,7 @@ export default function DashboardPage() {
         className="mt-12 text-center text-xs text-locked-text"
       >
         <div className="h-px bg-gradient-to-r from-transparent via-xp-purple-dim/30 to-transparent mb-4" />
-        <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap">
-          <span>More quests coming soon... ⚔️</span>
-          <button
-            onClick={() => {
-              if (window.confirm("Reset all progress? This cannot be undone.")) {
-                localStorage.clear();
-                window.location.reload();
-              }
-            }}
-            className="text-locked-text/50 hover:text-fire-red transition-colors"
-          >
-            Reset Progress
-          </button>
-        </div>
+        <span>More quests coming soon... ⚔️</span>
       </motion.footer>
     </main>
   );
