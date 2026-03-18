@@ -132,13 +132,19 @@ export default function LessonPlayerPage() {
     (score: number) => {
       if (!lesson || !userId) return;
       startTransition(async () => {
-        const result = await completeLesson(userId, slug, score, lesson.xpReward);
-        sfx("unlock-celebration");
-        setUnlockData({
-          xpEarned: lesson.xpReward,
-          newLevel: result.level,
-          streak: result.streak,
-        });
+        try {
+          const result = await completeLesson(userId, slug, score, lesson.xpReward);
+          sfx("unlock-celebration");
+          setUnlockData({
+            xpEarned: lesson.xpReward,
+            newLevel: result.level,
+            streak: result.streak,
+          });
+        } catch (err) {
+          console.error("[LessonPlayer] completeLesson error:", err);
+          // Still celebrate — don't punish the kid for a server error
+          sfx("unlock-celebration");
+        }
         setShowUnlock(true);
       });
     },

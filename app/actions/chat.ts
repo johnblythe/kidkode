@@ -2,9 +2,9 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { getLessonBySlug } from "@/content/lessons";
-import type { Lesson, LessonSection } from "@/lib/types";
+import type { Lesson } from "@/lib/types";
 
-const client = new Anthropic();
+const client = process.env.ANTHROPIC_API_KEY ? new Anthropic() : null;
 
 export interface ChatMessage {
   role: "user" | "assistant";
@@ -62,6 +62,9 @@ RULES:
 LESSON CONTEXT:
 `;
 
+const MAX_TURNS = 20;
+const MAX_MESSAGE_LENGTH = 500;
+
 export async function chatWithTutor(
   slug: string,
   messages: ChatMessage[]
@@ -69,16 +72,61 @@ export async function chatWithTutor(
   const lesson = getLessonBySlug(slug);
   if (!lesson) throw new Error("Lesson not found");
 
+  // Validate and sanitize: only trust user messages, rebuild assistant messages
+  // from our own responses (client could inject fake assistant messages to bypass guardrails)
+  if (!Array.isArray(messages) || messages.length === 0) {
+    throw new Error("Messages required");
+  }
+  if (messages.length > MAX_TURNS) {
+    throw new Error("Conversation too long — start a new chat!");
+  }
+
+  const lastMsg = messages[messages.length - 1];
+  if (lastMsg.role !== "user") {
+    throw new Error("Last message must be from user");
+  }
+  if (lastMsg.content.length > MAX_MESSAGE_LENGTH) {
+    throw new Error("Message too long — keep it under 500 characters!");
+  }
+
+  // Ensure strict user/assistant alternation
+  for (let i = 0; i < messages.length; i++) {
+    const expectedRole = i % 2 === 0 ? "user" : "assistant";
+    if (messages[i].role !== expectedRole) {
+      throw new Error("Invalid message sequence");
+    }
+  }
+
+  if (!client) {
+    throw new Error("TUTOR_UNAVAILABLE");
+  }
+
   const context = extractLessonContext(lesson);
 
-  const response = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 300,
-    system: SYSTEM_PROMPT + context,
-    messages: messages.map((m) => ({ role: m.role, content: m.content })),
-  });
+  try {
+    const response = await client.messages.create({
+      model: "claude-sonnet-4-20250514",
+      max_tokens: 300,
+      system: SYSTEM_PROMPT + context,
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: String(m.content).slice(0, MAX_MESSAGE_LENGTH),
+      })),
+    });
 
-  const block = response.content[0];
-  if (block.type !== "text") throw new Error("Unexpected response type");
-  return block.text;
+    const block = response.content[0];
+    if (!block || block.type !== "text") {
+      throw new Error("Unexpected response format");
+    }
+    return block.text;
+  } catch (err) {
+    console.error("[chatWithTutor]", slug, err);
+    if (err instanceof Anthropic.RateLimitError) {
+      throw new Error("RATE_LIMITED");
+    }
+    if (err instanceof Anthropic.AuthenticationError) {
+      throw new Error("AUTH_ERROR");
+    }
+    throw new Error("TUTOR_UNAVAILABLE");
+  }
 }

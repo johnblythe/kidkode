@@ -115,11 +115,16 @@ export default function LessonChat({ slug }: LessonChatProps) {
     try {
       const reply = await chatWithTutor(slug, updated);
       setMessages([...updated, { role: "assistant", content: reply }]);
-    } catch {
-      setMessages([
-        ...updated,
-        { role: "assistant", content: "Hmm, something went wrong. Try asking again!" },
-      ]);
+    } catch (err) {
+      console.error("[LessonChat] send error:", err);
+      const errMsg = err instanceof Error ? err.message : "";
+      let reply = "Hmm, something went wrong. Try again in a bit!";
+      if (errMsg === "RATE_LIMITED") {
+        reply = "Whoa, too many questions at once! Wait a moment and try again.";
+      } else if (errMsg === "AUTH_ERROR" || errMsg === "TUTOR_UNAVAILABLE") {
+        reply = "The tutor is taking a break right now. Try again later!";
+      }
+      setMessages([...updated, { role: "assistant", content: reply }]);
     } finally {
       setLoading(false);
     }

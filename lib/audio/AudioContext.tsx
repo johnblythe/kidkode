@@ -67,5 +67,8 @@ const NOOP_AUDIO: AudioContextValue = {
 
 export function useAudio(): AudioContextValue {
   const ctx = useContext(AudioCtx);
+  if (!ctx && process.env.NODE_ENV === "development") {
+    console.warn("[useAudio] No AudioProvider found — using no-op fallback");
+  }
   return ctx ?? NOOP_AUDIO;
 }
