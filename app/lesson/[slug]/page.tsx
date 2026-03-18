@@ -51,17 +51,20 @@ export default function LessonPlayerPage() {
   });
   const [notFound, setNotFound] = useState(false);
   const [, startTransition] = useTransition();
-  const [, startSaveTransition] = useTransition();
   // Debounce ref: prevent out-of-order sectionProgress writes from rapid navigation
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load lesson + restore progress from DB
+  // Redirect if not logged in
   useEffect(() => {
-    if (!mounted) return;
-    if (!userId) {
-      router.replace("/login");
-      return;
-    }
+    if (mounted && !userId) router.replace("/login");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, userId]);
+
+  // Load lesson + restore progress from DB (plain async — NOT startTransition,
+  // because Server Actions inside startTransition trigger RSC route refresh
+  // which can remount the component and reset refs, causing an infinite loop)
+  useEffect(() => {
+    if (!mounted || !userId) return;
 
     const found = getLessonBySlug(slug);
     if (!found) {
@@ -70,48 +73,52 @@ export default function LessonPlayerPage() {
     }
     setLesson(found);
 
-    startTransition(async () => {
-      // Restore section progress
-      const profile = await getProfile(userId);
-      const lp = profile?.lessons[slug];
-      if (lp && lp.sectionProgress > 0 && lp.status !== "completed") {
-        setCurrentSection(lp.sectionProgress);
+    let cancelled = false;
+    (async () => {
+      try {
+        const profile = await getProfile(userId);
+        if (cancelled) return;
+        const lp = profile?.lessons[slug];
+        if (lp && lp.sectionProgress > 0 && lp.status !== "completed") {
+          setCurrentSection(lp.sectionProgress);
+        }
+        await updateLessonProgress(userId, slug, { status: "in_progress" });
+      } catch (err) {
+        if (!cancelled) console.error("[LessonPlayer] load error:", err);
       }
+    })();
 
-      // Mark as in_progress
-      await updateLessonProgress(userId, slug, { status: "in_progress" });
-    });
-  }, [slug, mounted, userId, router]);
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug, mounted, userId]);
 
-  // Save section progress on change (debounced) + crossfade BGM
+  // Save section progress on change (debounced)
   useEffect(() => {
-    if (!lesson || !userId) return;
+    if (!lesson || !userId || currentSection <= 0) return;
 
-    // Debounce: cancel any pending save and schedule a new one.
-    // This prevents out-of-order writes when the user navigates sections quickly.
-    if (currentSection > 0) {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    const sectionToSave = currentSection;
+    saveTimerRef.current = setTimeout(() => {
+      updateLessonProgress(userId, slug, { sectionProgress: sectionToSave })
+        .catch((err) => console.error("[LessonPlayer] save error:", err));
+    }, 500);
+
+    return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      const sectionToSave = currentSection;
-      saveTimerRef.current = setTimeout(() => {
-        startSaveTransition(async () => {
-          await updateLessonProgress(userId, slug, {
-            sectionProgress: sectionToSave,
-          });
-        });
-      }, 500);
-    }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentSection, slug, userId]);
 
+  // Crossfade BGM based on section type
+  useEffect(() => {
+    if (!lesson) return;
     const sec = lesson.sections[currentSection];
     if (sec?.type === "quiz") {
       playBGM("battle");
     } else {
       playBGM("lesson-ambient");
     }
-
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, [currentSection, lesson, slug, userId, playBGM]);
+  }, [currentSection, lesson, playBGM]);
 
   const handleSectionComplete = useCallback(() => {
     if (!lesson) return;
@@ -174,6 +181,7 @@ export default function LessonPlayerPage() {
         xpEarned={unlockData.xpEarned}
         newLevel={unlockData.newLevel}
         streak={unlockData.streak}
+        slug={slug}
       />
     );
   }

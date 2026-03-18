@@ -6,11 +6,13 @@ import Link from "next/link";
 import { useAudio } from "@/lib/audio/AudioContext";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import CanvasParticles from "@/components/CanvasParticles";
+import LessonChat from "@/components/LessonChat";
 
 interface UnlockScreenProps {
   xpEarned: number;
   newLevel: number;
   streak: number;
+  slug: string;
 }
 
 function XPCounter({ target, duration = 2000 }: { target: number; duration?: number }) {
@@ -35,7 +37,7 @@ function XPCounter({ target, duration = 2000 }: { target: number; duration?: num
   return <span>{count}</span>;
 }
 
-export default function UnlockScreen({ xpEarned, newLevel, streak }: UnlockScreenProps) {
+export default function UnlockScreen({ xpEarned, newLevel, streak, slug }: UnlockScreenProps) {
   const { sfx, playBGM } = useAudio();
   const reducedMotion = useReducedMotion();
   const [showContent, setShowContent] = useState(false);
@@ -223,6 +225,8 @@ export default function UnlockScreen({ xpEarned, newLevel, streak }: UnlockScree
                   Time to Code!
                 </motion.button>
               </Link>
+
+              <LessonChat slug={slug} />
             </motion.div>
           )}
         </AnimatePresence>
