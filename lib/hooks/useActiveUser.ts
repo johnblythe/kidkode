@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { STORAGE_KEYS } from "@/lib/progress-client";
 
 interface ActiveUser {
@@ -34,22 +34,22 @@ export function useActiveUser(): ActiveUser {
     setMounted(true);
   }, []);
 
-  function signIn(id: string, em: string) {
+  const signIn = useCallback((id: string, em: string) => {
     localStorage.setItem(STORAGE_KEYS.activeUserId, id);
     localStorage.setItem(STORAGE_KEYS.activeEmail, em);
     localStorage.setItem(STORAGE_KEYS.sessionExpiry, String(Date.now() + 7 * 24 * 60 * 60 * 1000));
     setUserId(id);
     setEmail(em);
-  }
+  }, []);
 
-  function signOut() {
+  const signOut = useCallback(() => {
     localStorage.removeItem(STORAGE_KEYS.activeUserId);
     localStorage.removeItem(STORAGE_KEYS.activeEmail);
     localStorage.removeItem(STORAGE_KEYS.sessionExpiry);
     localStorage.removeItem(STORAGE_KEYS.legacyProgress);
     setUserId(null);
     setEmail(null);
-  }
+  }, []);
 
   return { userId, email, mounted, signIn, signOut };
 }

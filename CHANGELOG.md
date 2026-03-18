@@ -4,6 +4,26 @@ All notable changes to KidKode will be documented here.
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-03-18
+
+### Added
+- Post-lesson AI tutor chat on Quest Complete screen — scoped to lesson topic with guardrails (#33)
+- `@anthropic-ai/sdk` dependency for Claude API integration
+- `app/actions/chat.ts` — Server Action: `chatWithTutor` builds system prompt from lesson content
+- `components/LessonChat.tsx` — chat UI with markdown rendering (bold, inline code, code blocks, numbered lists)
+- Supabase local dev setup: `supabase/config.toml`, `.gitignore`, `seed.sql`
+
+### Fixed
+- Infinite re-render loop on lesson page: Server Actions inside `startTransition` triggered RSC route refresh causing component remount cycle
+- Split lesson page effects: separate redirect, load, save, and BGM effects to isolate dependencies
+- Memoized `AudioProvider` context value with `useMemo` to prevent unnecessary consumer re-renders
+- Stabilized `useAudio()` fallback with module-level `NOOP_AUDIO` constant
+- Wrapped `useActiveUser` `signIn`/`signOut` in `useCallback` for reference stability
+
+### Changed
+- Dev server port set to 3100 (`next dev -p 3100`)
+- `package.json` reformatted with proper indentation
+
 ## [0.8.0] - 2026-03-09
 
 ### Added

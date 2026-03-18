@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
 import { audioManager, type BgmTrack } from "./AudioManager";
 import type { SfxName } from "./sfx";
 
@@ -42,26 +42,33 @@ export function AudioProvider({ children }: { children: ReactNode }) {
     setMuted(newMuted);
   }, []);
 
+  const value = useMemo(
+    () => ({ sfx, playBGM, stopBGM, volume, setVolume, muted, toggleMute }),
+    [sfx, playBGM, stopBGM, volume, setVolume, muted, toggleMute]
+  );
+
   return (
-    <AudioCtx.Provider value={{ sfx, playBGM, stopBGM, volume, setVolume, muted, toggleMute }}>
+    <AudioCtx.Provider value={value}>
       {children}
     </AudioCtx.Provider>
   );
 }
 
+// Stable fallback — module-level constant so refs never change between renders
+const NOOP_AUDIO: AudioContextValue = {
+  sfx: () => {},
+  playBGM: () => {},
+  stopBGM: () => {},
+  volume: 0.5,
+  setVolume: () => {},
+  muted: false,
+  toggleMute: () => {},
+};
+
 export function useAudio(): AudioContextValue {
   const ctx = useContext(AudioCtx);
-  if (!ctx) {
-    // Fallback for SSR / outside provider — no-op
-    return {
-      sfx: () => {},
-      playBGM: () => {},
-      stopBGM: () => {},
-      volume: 0.5,
-      setVolume: () => {},
-      muted: false,
-      toggleMute: () => {},
-    };
+  if (!ctx && process.env.NODE_ENV === "development") {
+    console.warn("[useAudio] No AudioProvider found — using no-op fallback");
   }
-  return ctx;
+  return ctx ?? NOOP_AUDIO;
 }
