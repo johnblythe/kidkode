@@ -5,9 +5,10 @@ const lesson: Lesson = {
   title: "Sync vs Async: Time Magic",
   description:
     "Master the art of doing things in order vs doing multiple things at once — the time magic of programming!",
-  order: 6,
+  order: 24,
+  realm: 4,
   estimatedMinutes: 18,
-  xpReward: 175,
+  xpReward: 170,
   icon: "⚡",
   boss: {
     name: "The Callback Serpent",

@@ -3,7 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { QuizSection, BossData, QuizQuestion } from "@/lib/types";
-import { bossSprites, type BossSpriteState } from "@/components/bosses";
+import { getBossSprite, type BossSpriteState } from "@/components/bosses";
 import { useAudio } from "@/lib/audio/AudioContext";
 import { resolveCorrectIndex } from "@/lib/quiz-utils";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
@@ -174,11 +174,7 @@ export default function BossBattleSection({
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const questions = section.questions;
-  const BossSprite = bossSprites[boss.sprite];
-
-  if (!BossSprite) {
-    console.error(`[boss-battle] Unknown sprite key "${boss.sprite}". Available: ${Object.keys(bossSprites).join(", ")}`);
-  }
+  const BossSprite = getBossSprite(boss.sprite);
 
   const safeTimeout = useCallback((fn: () => void, ms: number) => {
     const id = setTimeout(fn, ms);

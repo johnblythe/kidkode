@@ -5,9 +5,10 @@ const lesson: Lesson = {
   title: "Terminal: The Dungeon Console",
   description:
     "Learn how the terminal works — the command-line interface where you type instructions to control your computer like a dungeon narrator.",
-  order: 3,
+  order: 2,
+  realm: 1,
   estimatedMinutes: 12,
-  xpReward: 100,
+  xpReward: 60,
   icon: "⌨️",
   boss: {
     name: "Permission Denied Golem",

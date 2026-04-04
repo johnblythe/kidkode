@@ -5,9 +5,10 @@ const lesson: Lesson = {
   title: "Asking AI: The Genie's Rules",
   description:
     "Learn how to talk to AI coding assistants effectively — because a vague wish gets a vague result!",
-  order: 7,
+  order: 29,
+  realm: 5,
   estimatedMinutes: 12,
-  xpReward: 200,
+  xpReward: 180,
   icon: "🤖",
   boss: {
     name: "The Hallucination Phantom",

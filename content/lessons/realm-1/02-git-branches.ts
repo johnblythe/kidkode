@@ -110,10 +110,25 @@ const lesson: Lesson = {
   title: "Git Branches: Parallel Universes",
   description:
     "Learn how branches let you work on new features safely — like creating parallel universes for your code.",
-  order: 2,
+  order: 6,
+  realm: 1,
   estimatedMinutes: 15,
-  xpReward: 75,
+  xpReward: 100,
   icon: "🌿",
+  boss: {
+    name: "The Detached HEAD Phantom",
+    description: "A ghostly specter born from checking out commits without a branch — lost in time, belonging nowhere",
+    sprite: "detachedHead",
+    maxHp: 100,
+    playerMaxHp: 3,
+    damagePerCorrect: 20,
+    attackNames: [
+      "Detached Reference Strike!",
+      "Orphaned Commit Blast!",
+      "Dangling Pointer Slash!",
+    ],
+    defeatText: "The Phantom fades as you reattach HEAD to a proper branch!",
+  },
   sections: [
     // ========== SLIDES ==========
     {

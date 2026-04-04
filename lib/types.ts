@@ -121,11 +121,31 @@ export interface Lesson {
   title: string;
   description: string;
   order: number;
+  realm: number; // references Realm.id (1-6)
   estimatedMinutes: number;
   xpReward: number;
   icon: string; // emoji
   sections: LessonSection[];
   boss?: BossData;
+}
+
+// ============================================
+// Realms
+// ============================================
+
+export type RealmUnlockCondition =
+  | { type: "default" }
+  | { type: "realm-complete"; realmId: number }
+  | { type: "all-realms"; realmIds: number[] };
+
+export interface Realm {
+  id: number;
+  slug: string;
+  name: string;
+  subtitle: string;
+  icon: string;
+  accentColor: string;
+  unlockCondition: RealmUnlockCondition;
 }
 
 // ============================================
@@ -194,6 +214,11 @@ export const XP_PER_LEVEL = [
   1900, // level 8
   2500, // level 9
   3200, // level 10
+  4000, // level 11
+  4900, // level 12
+  5900, // level 13
+  7000, // level 14
+  8500, // level 15
 ];
 
 export function calculateLevel(totalXp: number): { level: number; xp: number; xpToNextLevel: number } {
