@@ -1,5 +1,8 @@
 // Realm 1: The Apprentice's Tower
+import adventurersMap from "./realm-1/08-adventurers-map";
 import terminalBasics from "./realm-1/03-terminal-basics";
+import terminalSpells from "./realm-1/09-terminal-spells";
+import codeForge from "./realm-1/10-code-forge";
 import gitSavePoints from "./realm-1/01-git-save-points";
 import gitBranches from "./realm-1/02-git-branches";
 
@@ -15,7 +18,10 @@ import { Lesson } from "@/lib/types";
 
 // Sorted by order — consumers rely on this for progression
 export const lessons: Lesson[] = [
+  adventurersMap,   // order 1
   terminalBasics,   // order 2
+  terminalSpells,   // order 3
+  codeForge,        // order 4
   gitSavePoints,    // order 5
   gitBranches,      // order 6
   clientVsServer,   // order 22
