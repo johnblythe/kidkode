@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { BossSpriteProps } from "./MergeConflictHydra";
+import type { BossSpriteProps } from "./BossShell";
 
 export default function PermissionDeniedGolem({ state }: BossSpriteProps) {
   const stateClass =

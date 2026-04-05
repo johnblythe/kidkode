@@ -4,9 +4,10 @@ const lesson: Lesson = {
   slug: "git-save-points",
   title: "Git: Save Points for Your Code",
   description: "Learn how Git works like save points in a video game — letting you save progress, go back in time, and try different paths.",
-  order: 1,
+  order: 5,
+  realm: 1,
   estimatedMinutes: 12,
-  xpReward: 50,
+  xpReward: 90,
   icon: "💾",
   boss: {
     name: "Merge Conflict Hydra",

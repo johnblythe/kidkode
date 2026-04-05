@@ -5,9 +5,10 @@ const lesson: Lesson = {
   title: "Databases: The Inventory System",
   description:
     "Learn how apps store and retrieve data using databases — the ultimate inventory management system!",
-  order: 5,
+  order: 27,
+  realm: 4,
   estimatedMinutes: 15,
-  xpReward: 150,
+  xpReward: 190,
   icon: "\u{1F5C4}\uFE0F",
   boss: {
     name: "The Null Pointer",

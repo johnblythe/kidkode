@@ -4,6 +4,32 @@ All notable changes to KidKode will be documented here.
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-05
+
+### Added
+- Curriculum expansion: 36 lessons across 6 themed realms (#41, closes #41, closes #27)
+- `Realm` type with id, slug, name, subtitle, icon, accentColor, unlockCondition (`lib/types.ts`)
+- `content/realms.ts` — 6 realm definitions with color tokens and unlock conditions
+- `realm` field on `Lesson` interface for realm association
+- `XP_PER_LEVEL` extended from 10 to 15 levels (quadratic curve to 8500 XP)
+- `components/bosses/BossShell.tsx` — shared Framer Motion animation wrapper extracted from sprites
+- `components/bosses/GenericBoss.tsx` — parametric fallback boss (3 shapes, 8 colors) for new lessons
+- `getBossSprite()` with automatic GenericBoss fallback in boss registry
+- Realm 1: The Apprentice's Tower (6 lessons) — What is Code, Terminal I & II, Code Editor, Git basics
+- Realm 2: The Scribe's Library (8 lessons) — Hello World, Variables, Conditions, Loops, Functions, Console Quest practical, Arrays, Objects
+- Realm 3: The Frontend Realm (7 lessons) — HTML, CSS, Layout, DOM JS, Fan Page practical, Forms, Responsive Design
+- Realm 4: The Backend Dungeons (7 lessons) — Client/Server, JSON, Async, APIs, Weather Dashboard practical, Databases, Authentication
+- Realm 5: The Artificer's Workshop (5 lessons) — Asking AI, Claude Code, npm, Debugging, Deployment
+- Realm 6: The Grand Quest (3 lessons) — Project Planning, Profile Page, Final Boss (8-section capstone)
+- Boss for Git Branches lesson: "The Detached HEAD Phantom"
+- Lesson files organized into `content/lessons/realm-*/` directories
+
+### Changed
+- Existing 7 lessons renumbered to final curriculum positions (order + xpReward adjusted per realm)
+- `getNextLesson()` uses index-based lookup instead of `order + 1` (handles order gaps)
+- `BossBattleSection` uses `getBossSprite()` instead of direct `bossSprites[]` lookup
+- Lessons barrel (`content/lessons/index.ts`) sorts by order and imports from realm directories
+
 ## [0.9.0] - 2026-03-18
 
 ### Added

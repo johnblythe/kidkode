@@ -5,9 +5,10 @@ const lesson: Lesson = {
   title: "Client vs Server: The Two Kingdoms",
   description:
     "Discover how the internet works behind the scenes — the client requests, the server delivers!",
-  order: 4,
+  order: 22,
+  realm: 4,
   estimatedMinutes: 15,
-  xpReward: 125,
+  xpReward: 150,
   icon: "🌐",
   boss: {
     name: "The 404 Phantom",
