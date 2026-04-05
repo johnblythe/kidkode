@@ -38,6 +38,13 @@ import auth from "./realm-4/29-auth";
 import askingAi from "./realm-5/07-asking-ai";
 import claudeCode from "./realm-5/30-claude-code";
 import npmPackages from "./realm-5/31-npm";
+import debugging from "./realm-5/32-debugging";
+import deployment from "./realm-5/33-deployment";
+
+// Realm 6: The Grand Quest
+import projectPlanning from "./realm-6/34-project-planning";
+import profilePage from "./realm-6/35-profile-page";
+import finalBoss from "./realm-6/36-final-boss";
 
 import { Lesson } from "@/lib/types";
 
@@ -74,6 +81,11 @@ export const lessons: Lesson[] = [
   askingAi,         // order 29
   claudeCode,       // order 30
   npmPackages,      // order 31
+  debugging,        // order 32
+  deployment,       // order 33
+  projectPlanning,  // order 34
+  profilePage,      // order 35
+  finalBoss,        // order 36
 ].sort((a, b) => a.order - b.order);
 
 export function getLessonBySlug(slug: string): Lesson | undefined {
