@@ -27,11 +27,17 @@ import responsiveDesign from "./realm-3/25-responsive";
 
 // Realm 4: The Backend Dungeons
 import clientVsServer from "./realm-4/04-client-vs-server";
-import databases from "./realm-4/05-databases";
+import json from "./realm-4/26-json";
 import syncVsAsync from "./realm-4/06-sync-vs-async";
+import apis from "./realm-4/27-apis";
+import weatherDashboard from "./realm-4/28-weather-dashboard";
+import databases from "./realm-4/05-databases";
+import auth from "./realm-4/29-auth";
 
 // Realm 5: The Artificer's Workshop
 import askingAi from "./realm-5/07-asking-ai";
+import claudeCode from "./realm-5/30-claude-code";
+import npmPackages from "./realm-5/31-npm";
 
 import { Lesson } from "@/lib/types";
 
@@ -59,9 +65,15 @@ export const lessons: Lesson[] = [
   formsInput,       // order 20
   responsiveDesign, // order 21
   clientVsServer,   // order 22
+  json,             // order 23
   syncVsAsync,      // order 24
+  apis,             // order 25
+  weatherDashboard, // order 26 (practical)
   databases,        // order 27
+  auth,             // order 28
   askingAi,         // order 29
+  claudeCode,       // order 30
+  npmPackages,      // order 31
 ].sort((a, b) => a.order - b.order);
 
 export function getLessonBySlug(slug: string): Lesson | undefined {
