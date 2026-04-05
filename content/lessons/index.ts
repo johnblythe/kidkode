@@ -16,6 +16,15 @@ import consoleQuest from "./realm-2/16-console-quest";
 import arrays from "./realm-2/17-arrays";
 import objects from "./realm-2/18-objects";
 
+// Realm 3: The Frontend Realm
+import htmlSkeleton from "./realm-3/19-html";
+import cssEnchantment from "./realm-3/20-css";
+import layoutGrid from "./realm-3/21-layout";
+import browserJs from "./realm-3/22-browser-js";
+import fanPage from "./realm-3/23-fan-page";
+import formsInput from "./realm-3/24-forms";
+import responsiveDesign from "./realm-3/25-responsive";
+
 // Realm 4: The Backend Dungeons
 import clientVsServer from "./realm-4/04-client-vs-server";
 import databases from "./realm-4/05-databases";
@@ -42,6 +51,13 @@ export const lessons: Lesson[] = [
   consoleQuest,     // order 12 (practical)
   arrays,           // order 13
   objects,          // order 14
+  htmlSkeleton,     // order 15
+  cssEnchantment,   // order 16
+  layoutGrid,       // order 17
+  browserJs,        // order 18
+  fanPage,          // order 19 (practical)
+  formsInput,       // order 20
+  responsiveDesign, // order 21
   clientVsServer,   // order 22
   syncVsAsync,      // order 24
   databases,        // order 27
