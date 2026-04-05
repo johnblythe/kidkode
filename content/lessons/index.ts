@@ -12,6 +12,9 @@ import variables from "./realm-2/12-variables";
 import conditions from "./realm-2/13-conditions";
 import loops from "./realm-2/14-loops";
 import functions from "./realm-2/15-functions";
+import consoleQuest from "./realm-2/16-console-quest";
+import arrays from "./realm-2/17-arrays";
+import objects from "./realm-2/18-objects";
 
 // Realm 4: The Backend Dungeons
 import clientVsServer from "./realm-4/04-client-vs-server";
@@ -36,6 +39,9 @@ export const lessons: Lesson[] = [
   conditions,       // order 9
   loops,            // order 10
   functions,        // order 11
+  consoleQuest,     // order 12 (practical)
+  arrays,           // order 13
+  objects,          // order 14
   clientVsServer,   // order 22
   syncVsAsync,      // order 24
   databases,        // order 27
