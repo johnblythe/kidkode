@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 
 export interface BossSpriteProps {
   state: "idle" | "attacking" | "damaged" | "dead";
+  spriteKey?: string;
 }
 
 interface BossShellProps extends BossSpriteProps {

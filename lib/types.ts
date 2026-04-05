@@ -121,7 +121,7 @@ export interface Lesson {
   title: string;
   description: string;
   order: number;
-  realm: number; // references Realm.id (1-6)
+  realm: RealmId;
   estimatedMinutes: number;
   xpReward: number;
   icon: string; // emoji
@@ -133,13 +133,15 @@ export interface Lesson {
 // Realms
 // ============================================
 
+export type RealmId = 1 | 2 | 3 | 4 | 5 | 6;
+
 export type RealmUnlockCondition =
   | { type: "default" }
-  | { type: "realm-complete"; realmId: number }
-  | { type: "all-realms"; realmIds: number[] };
+  | { type: "realm-complete"; realmId: RealmId }
+  | { type: "all-realms"; realmIds: readonly RealmId[] };
 
 export interface Realm {
-  id: number;
+  id: RealmId;
   slug: string;
   name: string;
   subtitle: string;

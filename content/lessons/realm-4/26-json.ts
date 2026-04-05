@@ -284,16 +284,16 @@ Access nested data by chaining: \`guild.members[0].stats.hp\` → \`100\`
           type: "fill-blank",
           data: {
             template:
-              '{\n  ___name___: "Luna",\n  ___hp___: 100\n}',
+              '{\n  ___: "Luna",\n  ___: 100\n}',
             blanks: [
-              { id: "q1", placeholder: "quote", width: 1 },
-              { id: "q2", placeholder: "quote", width: 1 },
+              { id: "key1", placeholder: "key" },
+              { id: "key2", placeholder: "key" },
             ],
             filename: "hero.json",
           },
           solution: {
-            q1: '"',
-            q2: '"',
+            key1: ['"name"', '"Name"'],
+            key2: ['"hp"', '"HP"', '"health"'],
           },
           hint: "JSON requires all keys to be surrounded by double quotes — not single quotes, not bare names.",
         },

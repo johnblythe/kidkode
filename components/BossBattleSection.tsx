@@ -306,7 +306,7 @@ export default function BossBattleSection({
           animate={{ scale: 1, rotate: 0 }}
           transition={{ type: "spring", stiffness: 120, damping: 10 }}
         >
-          {BossSprite ? <BossSprite state="idle" /> : <div className="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
+          {BossSprite ? <BossSprite state="idle" spriteKey={boss.sprite} /> : <div className="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
         </motion.div>
         <motion.h2
           initial={{ opacity: 0, y: 20 }}
@@ -477,7 +477,7 @@ export default function BossBattleSection({
 
         {/* Boss sprite */}
         <div className="flex justify-center my-6 relative">
-          {BossSprite ? <BossSprite state={spriteState} /> : <div className="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
+          {BossSprite ? <BossSprite state={spriteState} spriteKey={boss.sprite} /> : <div className="w-32 h-32 sm:w-48 sm:h-48 md:w-64 md:h-64 rounded-lg bg-void-lighter border border-fire-red/30 flex items-center justify-center text-fire-red text-sm">???</div>}
           {/* Hit explosion */}
           <AnimatePresence>
             {showHitExplosion && !reducedMotion && <HitExplosion key="hit-explosion" />}

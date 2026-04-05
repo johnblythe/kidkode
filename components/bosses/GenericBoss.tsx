@@ -60,12 +60,10 @@ const PALETTE = [
   "#ea580c", // orange
 ];
 
-export default function GenericBoss({ state }: BossSpriteProps) {
-  // Use a stable hash of the component's key (from React) or fallback
-  // Since we don't have the boss name here, use a random-ish but stable default
-  const hash = hashString("generic");
+export default function GenericBoss({ state, spriteKey = "generic" }: BossSpriteProps) {
+  const hash = hashString(spriteKey);
   const shapeIndex = hash % SHAPES.length;
-  const colorIndex = hash % PALETTE.length;
+  const colorIndex = (hash >> 3) % PALETTE.length; // shift bits to decorrelate shape/color
   const color = PALETTE[colorIndex];
   const shape = SHAPES[shapeIndex];
 
