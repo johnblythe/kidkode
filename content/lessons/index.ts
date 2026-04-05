@@ -6,6 +6,13 @@ import codeForge from "./realm-1/10-code-forge";
 import gitSavePoints from "./realm-1/01-git-save-points";
 import gitBranches from "./realm-1/02-git-branches";
 
+// Realm 2: The Scribe's Library
+import helloWorld from "./realm-2/11-hello-world";
+import variables from "./realm-2/12-variables";
+import conditions from "./realm-2/13-conditions";
+import loops from "./realm-2/14-loops";
+import functions from "./realm-2/15-functions";
+
 // Realm 4: The Backend Dungeons
 import clientVsServer from "./realm-4/04-client-vs-server";
 import databases from "./realm-4/05-databases";
@@ -24,6 +31,11 @@ export const lessons: Lesson[] = [
   codeForge,        // order 4
   gitSavePoints,    // order 5
   gitBranches,      // order 6
+  helloWorld,       // order 7
+  variables,        // order 8
+  conditions,       // order 9
+  loops,            // order 10
+  functions,        // order 11
   clientVsServer,   // order 22
   syncVsAsync,      // order 24
   databases,        // order 27
