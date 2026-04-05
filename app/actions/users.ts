@@ -2,6 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { getProfile, makeEmptyProfile } from "@/lib/progress";
+import { getBadgesForUser } from "@/lib/badges";
 import { calculateLevel } from "@/lib/types";
 import type {
   PlayerProfile,
@@ -140,45 +141,49 @@ export async function listChildren(parentId: string): Promise<PlayerProfile[]> {
   if (error) throw new Error(error.message);
   if (!data) return [];
 
-  return data.map((child) => {
-    const stats = Array.isArray(child.character_stats)
-      ? child.character_stats[0]
-      : child.character_stats;
-    const lessonRows = Array.isArray(child.lesson_progress)
-      ? child.lesson_progress
-      : [];
+  return Promise.all(
+    data.map(async (child) => {
+      const stats = Array.isArray(child.character_stats)
+        ? child.character_stats[0]
+        : child.character_stats;
+      const lessonRows = Array.isArray(child.lesson_progress)
+        ? child.lesson_progress
+        : [];
 
-    const totalXp = stats?.total_xp ?? 0;
-    const lessonsMap: Record<string, LessonProgress> = {};
-    for (const row of lessonRows) {
-      lessonsMap[row.lesson_slug] = {
-        slug: row.lesson_slug,
-        status: row.status as LessonProgress["status"],
-        quizScore: row.score ?? undefined,
-        xpEarned: row.xp_earned,
-        attempts: row.attempts,
-        sectionProgress: row.section_index,
-        completedAt: row.completed_at ?? undefined,
+      const totalXp = stats?.total_xp ?? 0;
+      const lessonsMap: Record<string, LessonProgress> = {};
+      for (const row of lessonRows) {
+        lessonsMap[row.lesson_slug] = {
+          slug: row.lesson_slug,
+          status: row.status as LessonProgress["status"],
+          quizScore: row.score ?? undefined,
+          xpEarned: row.xp_earned,
+          attempts: row.attempts,
+          sectionProgress: row.section_index,
+          completedAt: row.completed_at ?? undefined,
+        };
+      }
+      const completed = lessonRows.filter((r) => r.status === "completed").length;
+      const levelInfo = calculateLevel(totalXp);
+      const badges = await getBadgesForUser(child.id);
+
+      return {
+        id: child.id,
+        email: child.email,
+        name: child.hero_name,
+        heroClass: child.hero_class,
+        role: "child" as const,
+        level: stats?.current_level ?? 1,
+        xp: levelInfo.xp,
+        xpToNextLevel: levelInfo.xpToNextLevel,
+        streak: stats?.streak_days ?? 0,
+        totalLessonsCompleted: completed,
+        unlockedToday: false,
+        lessons: lessonsMap,
+        badges,
       };
-    }
-    const completed = lessonRows.filter((r) => r.status === "completed").length;
-    const levelInfo = calculateLevel(totalXp);
-
-    return {
-      id: child.id,
-      email: child.email,
-      name: child.hero_name,
-      heroClass: child.hero_class,
-      role: "child" as const,
-      level: stats?.current_level ?? 1,
-      xp: levelInfo.xp,
-      xpToNextLevel: levelInfo.xpToNextLevel,
-      streak: stats?.streak_days ?? 0,
-      totalLessonsCompleted: completed,
-      unlockedToday: false,
-      lessons: lessonsMap,
-    };
-  });
+    })
+  );
 }
 
 // ============================================================
@@ -252,4 +257,66 @@ export async function forceUnlockLesson(
     { onConflict: "user_id,lesson_slug" }
   );
   if (error) throw new Error(error.message);
+}
+
+// ============================================================
+// resetLessonProgress — parent resets a child's lesson to retake
+// ============================================================
+
+export async function resetLessonProgress(
+  parentId: string,
+  childId: string,
+  lessonSlug: string
+): Promise<void> {
+  // Verify ownership
+  const { data: child } = await supabase
+    .from("users")
+    .select("parent_id")
+    .eq("id", childId)
+    .maybeSingle();
+
+  if (!child || child.parent_id !== parentId) {
+    throw new Error("UNAUTHORIZED");
+  }
+
+  // Get current progress to know how much XP to claw back
+  const { data: progress } = await supabase
+    .from("lesson_progress")
+    .select("xp_earned, status")
+    .eq("user_id", childId)
+    .eq("lesson_slug", lessonSlug)
+    .maybeSingle();
+
+  if (!progress) return;
+
+  // Delete + re-insert (the prevent_completed_downgrade trigger blocks
+  // UPDATE from "completed" → anything else, so we bypass via delete/insert)
+  const { error: deleteError } = await supabase
+    .from("lesson_progress")
+    .delete()
+    .eq("user_id", childId)
+    .eq("lesson_slug", lessonSlug);
+
+  if (deleteError) throw new Error(deleteError.message);
+
+  const { error: insertError } = await supabase
+    .from("lesson_progress")
+    .insert({
+      user_id: childId,
+      lesson_slug: lessonSlug,
+      status: "available",
+    });
+
+  if (insertError) throw new Error(insertError.message);
+
+  // Subtract XP if lesson was completed
+  if (progress.status === "completed" && progress.xp_earned > 0) {
+    const { error: xpError } = await supabase.rpc("award_xp", {
+      p_user_id: childId,
+      p_amount: -progress.xp_earned,
+      p_reason: "lesson_reset",
+      p_lesson: lessonSlug,
+    });
+    if (xpError) console.error("XP clawback failed:", xpError.message);
+  }
 }

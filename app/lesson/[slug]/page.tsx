@@ -44,7 +44,13 @@ export default function LessonPlayerPage() {
   const [lesson, setLesson] = useState<Lesson | null>(null);
   const [currentSection, setCurrentSection] = useState(0);
   const [showUnlock, setShowUnlock] = useState(false);
-  const [unlockData, setUnlockData] = useState({
+  const [unlockData, setUnlockData] = useState<{
+    xpEarned: number;
+    newLevel: number;
+    streak: number;
+    quizScore?: number;
+    newBadges?: { slug: string; name: string; icon: string }[];
+  }>({
     xpEarned: 0,
     newLevel: 1,
     streak: 0,
@@ -139,6 +145,8 @@ export default function LessonPlayerPage() {
             xpEarned: lesson.xpReward,
             newLevel: result.level,
             streak: result.streak,
+            quizScore: score,
+            newBadges: result.newBadges,
           });
         } catch (err) {
           console.error("[LessonPlayer] completeLesson error:", err);
@@ -188,6 +196,8 @@ export default function LessonPlayerPage() {
         newLevel={unlockData.newLevel}
         streak={unlockData.streak}
         slug={slug}
+        quizScore={unlockData.quizScore}
+        newBadges={unlockData.newBadges}
       />
     );
   }

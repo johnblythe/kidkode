@@ -4,6 +4,31 @@ All notable changes to KidKode will be documented here.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-04-05
+
+### Added
+- Realm badges: earn a badge when all lessons in a realm are completed (#35)
+- `user_badges` DB table via migration 005; UNIQUE(user_id, badge_slug) prevents duplicate awards
+- `lib/badge-config.ts` — static `REALM_BADGES` metadata (client-safe)
+- `lib/badges.ts` — `checkAndAwardBadges()` (runs after completeLesson) and `getBadgesForUser()`
+- `components/BadgeWall.tsx` — 6-slot badge grid with earned glow, locked progress bars, and tap tooltips
+- `components/QuizTierBadge.tsx` — inline medal icon (🥇🥈🥉) for gold/silver/bronze tiers
+- Quiz score tiers: gold ≥100%, silver ≥80%, bronze ≥60%; computed from existing `lesson_progress.score`
+- Tier medals shown on completed lesson nodes (dashboard) and lesson rows (parent view)
+- Score tier announced on UnlockScreen after lesson completion
+- New realm badge pop-in on UnlockScreen when a realm badge is earned
+- Badge wall shown on parent child detail page (read-only)
+
+### Fixed
+- `xp_transactions CHECK (amount > 0)` relaxed to `amount != 0` — XP clawback on lesson reset was silently failing (#35)
+
+### Changed
+- `PlayerProfile` — added `badges: EarnedBadge[]`
+- `LessonCompletionResult` — added optional `newBadges`
+- `completeLesson()` — checks and awards realm badges after marking lesson complete
+- `getProfile()` — fetches badges in parallel with user/stats/progress queries
+- `listChildren()` — includes badges per child profile
+
 ## [1.0.0] - 2026-04-05
 
 ### Added

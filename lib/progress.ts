@@ -9,8 +9,10 @@ import type {
   LessonProgress,
   LessonProgressPatch,
   LessonCompletionResult,
+  EarnedBadge,
 } from "@/lib/types";
 import { lessons } from "@/content/lessons";
+import { checkAndAwardBadges, getBadgesForUser } from "@/lib/badges";
 
 // Factory function — never return a module-level default object.
 // Prevents singleton mutation across concurrent server requests.
@@ -28,6 +30,7 @@ export function makeEmptyProfile(userId: string, email: string): PlayerProfile {
     totalLessonsCompleted: 0,
     unlockedToday: false,
     lessons: {},
+    badges: [],
   };
 }
 
@@ -55,7 +58,8 @@ function rowsToProfile(
     attempts: number;
     section_index: number;
     completed_at: string | null;
-  }>
+  }>,
+  badgeRows: EarnedBadge[]
 ): PlayerProfile {
   const totalXp = stats?.total_xp ?? 0;
   const levelInfo = calculateLevel(totalXp);
@@ -99,6 +103,7 @@ function rowsToProfile(
     totalLessonsCompleted,
     unlockedToday: completedToday,
     lessons: lessonsMap,
+    badges: badgeRows,
   };
 }
 
@@ -107,7 +112,7 @@ function rowsToProfile(
 // ============================================================
 
 export async function getProfile(userId: string): Promise<PlayerProfile | null> {
-  const [userResult, statsResult, progressResult] = await Promise.all([
+  const [userResult, statsResult, progressResult, badgeRows] = await Promise.all([
     supabase
       .from("users")
       .select("id, email, hero_name, hero_class, role")
@@ -122,6 +127,7 @@ export async function getProfile(userId: string): Promise<PlayerProfile | null> 
       .from("lesson_progress")
       .select("lesson_slug, status, score, xp_earned, attempts, section_index, completed_at")
       .eq("user_id", userId),
+    getBadgesForUser(userId),
   ]);
 
   if (userResult.error) throw new Error(userResult.error.message);
@@ -130,7 +136,8 @@ export async function getProfile(userId: string): Promise<PlayerProfile | null> 
   return rowsToProfile(
     userResult.data,
     statsResult.data,
-    progressResult.data ?? []
+    progressResult.data ?? [],
+    badgeRows
   );
 }
 
@@ -194,15 +201,31 @@ export async function completeLesson(
 
   await unlockNextLesson(userId, slug);
 
-  const { data: stats } = await supabase
-    .from("character_stats")
-    .select("current_level, streak_days")
-    .eq("user_id", userId)
-    .maybeSingle();
+  // Fetch updated completed slugs for badge check
+  const { data: allProgress } = await supabase
+    .from("lesson_progress")
+    .select("lesson_slug, status")
+    .eq("user_id", userId);
+
+  const completedSlugs = new Set(
+    (allProgress ?? [])
+      .filter((r) => r.status === "completed")
+      .map((r) => r.lesson_slug)
+  );
+
+  const [statsResult, newBadges] = await Promise.all([
+    supabase
+      .from("character_stats")
+      .select("current_level, streak_days")
+      .eq("user_id", userId)
+      .maybeSingle(),
+    checkAndAwardBadges(userId, completedSlugs),
+  ]);
 
   return {
-    level: stats?.current_level ?? 1,
-    streak: stats?.streak_days ?? 0,
+    level: statsResult.data?.current_level ?? 1,
+    streak: statsResult.data?.streak_days ?? 0,
+    newBadges: newBadges.length > 0 ? newBadges : undefined,
   };
 }
 

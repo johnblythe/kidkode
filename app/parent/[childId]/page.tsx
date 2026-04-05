@@ -4,9 +4,12 @@ import { useState, useEffect, useTransition } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useActiveUser } from "@/lib/hooks/useActiveUser";
-import { getChildProfileForParent, forceUnlockLesson } from "@/app/actions/users";
+import { getChildProfileForParent, forceUnlockLesson, resetLessonProgress } from "@/app/actions/users";
 import { lessons } from "@/content/lessons";
 import type { PlayerProfile } from "@/lib/types";
+import { getQuizTier } from "@/lib/types";
+import BadgeWall from "@/components/BadgeWall";
+import QuizTierBadge from "@/components/QuizTierBadge";
 
 export default function ChildDetailPage() {
   const params = useParams();
@@ -16,6 +19,7 @@ export default function ChildDetailPage() {
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [isPending, startTransition] = useTransition();
   const [justUnlocked, setJustUnlocked] = useState(false);
+  const [resettingSlug, setResettingSlug] = useState<string | null>(null);
 
   useEffect(() => {
     if (!mounted) return;
@@ -41,6 +45,17 @@ export default function ChildDetailPage() {
       const p = await getChildProfileForParent(userId, childId);
       setProfile(p);
       setJustUnlocked(true);
+    });
+  }
+
+  function handleResetLesson(slug: string) {
+    if (!userId) return;
+    setResettingSlug(slug);
+    startTransition(async () => {
+      await resetLessonProgress(userId, childId, slug);
+      const p = await getChildProfileForParent(userId, childId);
+      setProfile(p);
+      setResettingSlug(null);
     });
   }
 
@@ -108,6 +123,16 @@ export default function ChildDetailPage() {
         </div>
       </div>
 
+      {/* Badge Wall */}
+      <BadgeWall
+        badges={profile.badges}
+        completedSlugs={new Set(
+          Object.values(profile.lessons)
+            .filter((l) => l.status === "completed")
+            .map((l) => l.slug)
+        )}
+      />
+
       {/* Force unlock */}
       {hasCompletedAny && !allCompleted && (
         <div className="rpg-card p-4 mb-6 flex items-center gap-4">
@@ -167,16 +192,42 @@ export default function ChildDetailPage() {
                   {lesson.title}
                 </p>
                 {isCompleted && progress.quizScore !== undefined && (
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-xs text-locked-text">
+                      {progress.quizScore}% · {progress.xpEarned} XP
+                    </p>
+                    <QuizTierBadge tier={getQuizTier(progress.quizScore)} />
+                  </div>
+                )}
+                {isAvailable && progress && progress.sectionProgress > 0 && (
                   <p className="text-xs text-locked-text mt-0.5">
-                    Score: {progress.quizScore}% · {progress.xpEarned} XP
+                    Section {progress.sectionProgress} / {lessons.find(l => l.slug === lesson.slug)?.sections.length ?? "?"}
                   </p>
                 )}
               </div>
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-center gap-2">
                 {isCompleted ? (
-                  <span className="text-hp-green text-sm">✓</span>
+                  <>
+                    <span className="text-hp-green text-sm">✓</span>
+                    <button
+                      onClick={() => handleResetLesson(lesson.slug)}
+                      disabled={isPending}
+                      className="text-[10px] text-fire-red/60 hover:text-fire-red border border-fire-red/20 hover:border-fire-red/40 px-2 py-0.5 rounded transition-colors disabled:opacity-50"
+                    >
+                      {resettingSlug === lesson.slug ? "..." : "Reset"}
+                    </button>
+                  </>
                 ) : isAvailable ? (
-                  <span className="text-gold text-xs">In Progress</span>
+                  <>
+                    <span className="text-gold text-xs">In Progress</span>
+                    <button
+                      onClick={() => handleResetLesson(lesson.slug)}
+                      disabled={isPending}
+                      className="text-[10px] text-fire-red/60 hover:text-fire-red border border-fire-red/20 hover:border-fire-red/40 px-2 py-0.5 rounded transition-colors disabled:opacity-50"
+                    >
+                      {resettingSlug === lesson.slug ? "..." : "Reset"}
+                    </button>
+                  </>
                 ) : (
                   <span className="text-locked-text text-xs">🔒</span>
                 )}
