@@ -154,6 +154,32 @@ export interface Realm {
 // Progress & RPG
 // ============================================
 
+export type QuizTier = "gold" | "silver" | "bronze" | null;
+
+export function getQuizTier(score: number | undefined): QuizTier {
+  if (score === undefined || score === null) return null;
+  if (score >= 100) return "gold";   // perfect score
+  if (score >= 80) return "silver";  // 4/5, 5/6, 6/7
+  if (score >= 60) return "bronze";  // 3/5, 4/6, 5/7
+  return null;
+}
+
+export interface EarnedBadge {
+  slug: string;        // realm slug, e.g. "apprentices-tower"
+  realmId: RealmId;
+  name: string;
+  icon: string;
+  description: string;
+  earnedAt: string;    // ISO date
+}
+
+// Notification payload from completeLesson — narrower than EarnedBadge (no earnedAt/description)
+export interface NewlyAwardedBadge {
+  slug: string;
+  name: string;
+  icon: string;
+}
+
 export interface LessonProgress {
   slug: string;
   status: "locked" | "available" | "in_progress" | "completed";
@@ -178,6 +204,7 @@ export interface PlayerProfile {
   totalLessonsCompleted: number;
   unlockedToday: boolean;
   lessons: Record<string, LessonProgress>;
+  badges: EarnedBadge[];
 }
 
 // Session stored in localStorage — login credentials, separate from game stats
@@ -196,6 +223,7 @@ export type LookupResult =
 export interface LessonCompletionResult {
   level: number;
   streak: number;
+  newBadges?: NewlyAwardedBadge[];
 }
 
 // Narrowed patch type for updateLessonProgress — only fields safe to update mid-session

@@ -8,8 +8,11 @@ import { lessons } from "@/content/lessons";
 import { loadDashboard } from "@/app/actions/progress";
 import { useActiveUser } from "@/lib/hooks/useActiveUser";
 import type { PlayerProfile, LessonProgress } from "@/lib/types";
+import { getQuizTier } from "@/lib/types";
 import VolumeToggle from "@/components/VolumeToggle";
 import { useAudio } from "@/lib/audio/AudioContext";
+import BadgeWall from "@/components/BadgeWall";
+import QuizTierBadge from "@/components/QuizTierBadge";
 
 // ============================================
 // Sub-components
@@ -299,9 +302,12 @@ function LessonNode({
                 <span>⏱</span> ~{lesson.estimatedMinutes} min
               </span>
               {isCompleted && progress.quizScore !== undefined && (
-                <span className="flex items-center gap-1 text-hp-green">
-                  <span>🎯</span> {progress.quizScore}% score
-                </span>
+                <>
+                  <span className="flex items-center gap-1 text-hp-green">
+                    <span>🎯</span> {progress.quizScore}%
+                  </span>
+                  <QuizTierBadge tier={getQuizTier(progress.quizScore)} />
+                </>
               )}
             </div>
           </div>
@@ -406,6 +412,16 @@ export default function DashboardPage() {
       {/* Unlock Banner */}
       <UnlockBanner unlocked={profile.unlockedToday} />
 
+      {/* Badge Wall */}
+      <BadgeWall
+        badges={profile.badges}
+        completedSlugs={new Set(
+          Object.values(profile.lessons)
+            .filter((l) => l.status === "completed")
+            .map((l) => l.slug)
+        )}
+      />
+
       {/* Quest Map Header */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -423,12 +439,22 @@ export default function DashboardPage() {
       {/* Lesson Nodes */}
       <div className="ml-2">
         {sortedLessons.map((lesson, idx) => {
-          const progress: LessonProgress = profile.lessons[lesson.slug] || {
-            slug: lesson.slug,
-            status: "locked",
-            attempts: 0,
-            sectionProgress: 0,
-          };
+          const raw = profile.lessons[lesson.slug];
+          const progress: LessonProgress = profile.role === "parent"
+            ? {
+                slug: lesson.slug,
+                status: raw?.status === "completed" ? "completed" : "available",
+                attempts: raw?.attempts ?? 0,
+                sectionProgress: raw?.sectionProgress ?? 0,
+                quizScore: raw?.quizScore,
+                xpEarned: raw?.xpEarned,
+              }
+            : raw || {
+                slug: lesson.slug,
+                status: "locked",
+                attempts: 0,
+                sectionProgress: 0,
+              };
 
           return (
             <LessonNode

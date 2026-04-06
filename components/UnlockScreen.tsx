@@ -7,12 +7,16 @@ import { useAudio } from "@/lib/audio/AudioContext";
 import { useReducedMotion } from "@/lib/hooks/useReducedMotion";
 import CanvasParticles from "@/components/CanvasParticles";
 import LessonChat from "@/components/LessonChat";
+import QuizTierBadge from "@/components/QuizTierBadge";
+import { getQuizTier } from "@/lib/types";
 
 interface UnlockScreenProps {
   xpEarned: number;
   newLevel: number;
   streak: number;
   slug: string;
+  quizScore?: number;
+  newBadges?: { slug: string; name: string; icon: string }[];
 }
 
 function XPCounter({ target, duration = 2000 }: { target: number; duration?: number }) {
@@ -37,12 +41,13 @@ function XPCounter({ target, duration = 2000 }: { target: number; duration?: num
   return <span>{count}</span>;
 }
 
-export default function UnlockScreen({ xpEarned, newLevel, streak, slug }: UnlockScreenProps) {
+export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizScore, newBadges }: UnlockScreenProps) {
   const { sfx, playBGM } = useAudio();
   const reducedMotion = useReducedMotion();
   const [showContent, setShowContent] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showButton, setShowButton] = useState(false);
+  const tier = getQuizTier(quizScore);
 
   useEffect(() => {
     sfx("unlock-celebration");
@@ -197,6 +202,37 @@ export default function UnlockScreen({ xpEarned, newLevel, streak, slug }: Unloc
                   </div>
                 </motion.div>
               )}
+
+              {/* Score Tier */}
+              {tier && (
+                <motion.div
+                  initial={{ scale: 0.8 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.45 }}
+                  className="rpg-card px-6 py-4 flex items-center justify-between"
+                >
+                  <span className="text-slate-400 text-sm uppercase tracking-wider">Score Tier</span>
+                  <QuizTierBadge tier={tier} size="md" />
+                </motion.div>
+              )}
+
+              {/* New Badges */}
+              {newBadges && newBadges.length > 0 && newBadges.map((badge, i) => (
+                <motion.div
+                  key={badge.slug}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.6 + i * 0.15 }}
+                  className="rpg-card px-6 py-4 flex items-center justify-between border-gold/40"
+                  style={{ boxShadow: "0 0 20px rgba(251,191,36,0.3)" }}
+                >
+                  <span className="text-slate-400 text-sm uppercase tracking-wider">Realm Badge</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{badge.icon}</span>
+                    <span className="text-gold font-bold text-sm">{badge.name}</span>
+                  </div>
+                </motion.div>
+              ))}
             </motion.div>
           )}
         </AnimatePresence>

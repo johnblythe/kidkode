@@ -2,6 +2,8 @@
 
 import { supabase } from "@/lib/supabase";
 import { getProfile, makeEmptyProfile } from "@/lib/progress";
+import { REALM_BADGES } from "@/lib/badge-config";
+import type { EarnedBadge } from "@/lib/types";
 import { calculateLevel } from "@/lib/types";
 import type {
   PlayerProfile,
@@ -121,7 +123,7 @@ export async function createChild(
 }
 
 // ============================================================
-// listChildren — single query (no N+1)
+// listChildren — two queries total (users+stats+progress joined, then badges batch)
 // ============================================================
 
 export async function listChildren(parentId: string): Promise<PlayerProfile[]> {
@@ -138,7 +140,40 @@ export async function listChildren(parentId: string): Promise<PlayerProfile[]> {
     .eq("role", "child");
 
   if (error) throw new Error(error.message);
-  if (!data) return [];
+  if (!data || data.length === 0) return [];
+
+  // Batch-fetch all badges in one query rather than N per-child round trips
+  const childIds = data.map((c) => c.id);
+  const badgesByChild = new Map<string, EarnedBadge[]>();
+  try {
+    const { data: badgeRows, error: badgeError } = await supabase
+      .from("user_badges")
+      .select("user_id, badge_slug, realm_id, earned_at")
+      .in("user_id", childIds)
+      .order("realm_id", { ascending: true });
+
+    if (badgeError) {
+      console.error("[listChildren] badge fetch failed — continuing with empty badges:", badgeError.message);
+    } else {
+      for (const row of badgeRows ?? []) {
+        const realmId = row.realm_id as import("@/lib/types").RealmId;
+        const meta = REALM_BADGES[realmId];
+        const badge: EarnedBadge = {
+          slug: row.badge_slug,
+          realmId,
+          name: meta.name,
+          icon: meta.icon,
+          description: meta.description,
+          earnedAt: row.earned_at,
+        };
+        const list = badgesByChild.get(row.user_id) ?? [];
+        list.push(badge);
+        badgesByChild.set(row.user_id, list);
+      }
+    }
+  } catch (err) {
+    console.error("[listChildren] badge fetch threw — continuing with empty badges:", err);
+  }
 
   return data.map((child) => {
     const stats = Array.isArray(child.character_stats)
@@ -177,6 +212,7 @@ export async function listChildren(parentId: string): Promise<PlayerProfile[]> {
       totalLessonsCompleted: completed,
       unlockedToday: false,
       lessons: lessonsMap,
+      badges: badgesByChild.get(child.id) ?? [],
     };
   });
 }
@@ -252,4 +288,66 @@ export async function forceUnlockLesson(
     { onConflict: "user_id,lesson_slug" }
   );
   if (error) throw new Error(error.message);
+}
+
+// ============================================================
+// resetLessonProgress — parent resets a child's lesson to retake
+// ============================================================
+
+export async function resetLessonProgress(
+  parentId: string,
+  childId: string,
+  lessonSlug: string
+): Promise<void> {
+  // Verify ownership
+  const { data: child } = await supabase
+    .from("users")
+    .select("parent_id")
+    .eq("id", childId)
+    .maybeSingle();
+
+  if (!child || child.parent_id !== parentId) {
+    throw new Error("UNAUTHORIZED");
+  }
+
+  // Get current progress to know how much XP to claw back
+  const { data: progress } = await supabase
+    .from("lesson_progress")
+    .select("xp_earned, status")
+    .eq("user_id", childId)
+    .eq("lesson_slug", lessonSlug)
+    .maybeSingle();
+
+  if (!progress) return;
+
+  // Delete + re-insert (the prevent_completed_downgrade trigger blocks
+  // UPDATE from "completed" → anything else, so we bypass via delete/insert)
+  const { error: deleteError } = await supabase
+    .from("lesson_progress")
+    .delete()
+    .eq("user_id", childId)
+    .eq("lesson_slug", lessonSlug);
+
+  if (deleteError) throw new Error(deleteError.message);
+
+  const { error: insertError } = await supabase
+    .from("lesson_progress")
+    .insert({
+      user_id: childId,
+      lesson_slug: lessonSlug,
+      status: "available",
+    });
+
+  if (insertError) throw new Error(insertError.message);
+
+  // Subtract XP if lesson was completed
+  if (progress.status === "completed" && progress.xp_earned > 0) {
+    const { error: xpError } = await supabase.rpc("award_xp", {
+      p_user_id: childId,
+      p_amount: -progress.xp_earned,
+      p_reason: "lesson_reset",
+      p_lesson: lessonSlug,
+    });
+    if (xpError) console.error("XP clawback failed:", xpError.message);
+  }
 }
