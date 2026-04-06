@@ -77,16 +77,16 @@ function BadgeSlot({ realmId, earned, completedCount, totalCount }: BadgeSlotPro
               onClick={() => setOpen(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.85, y: -4 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.85, y: -4 }}
+              initial={{ opacity: 0, scale: 0.85, y: -4, x: "-50%" }}
+              animate={{ opacity: 1, scale: 1, y: 0, x: "-50%" }}
+              exit={{ opacity: 0, scale: 0.85, y: -4, x: "-50%" }}
               transition={{ duration: 0.18 }}
               className={`
                 absolute bottom-full mb-2 z-30 w-52 rounded-xl border p-3
                 bg-void-lighter shadow-xl text-left
                 ${earned ? accent.border : "border-locked/30"}
               `}
-              style={{ left: "50%", transform: "translateX(-50%)" }}
+              style={{ left: "50%" }}
             >
               {earned ? (
                 <>

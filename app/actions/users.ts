@@ -2,7 +2,8 @@
 
 import { supabase } from "@/lib/supabase";
 import { getProfile, makeEmptyProfile } from "@/lib/progress";
-import { getBadgesForUser } from "@/lib/badges";
+import { REALM_BADGES } from "@/lib/badge-config";
+import type { EarnedBadge } from "@/lib/types";
 import { calculateLevel } from "@/lib/types";
 import type {
   PlayerProfile,
@@ -122,7 +123,7 @@ export async function createChild(
 }
 
 // ============================================================
-// listChildren — single query (no N+1)
+// listChildren — two queries total (users+stats+progress joined, then badges batch)
 // ============================================================
 
 export async function listChildren(parentId: string): Promise<PlayerProfile[]> {
@@ -139,51 +140,81 @@ export async function listChildren(parentId: string): Promise<PlayerProfile[]> {
     .eq("role", "child");
 
   if (error) throw new Error(error.message);
-  if (!data) return [];
+  if (!data || data.length === 0) return [];
 
-  return Promise.all(
-    data.map(async (child) => {
-      const stats = Array.isArray(child.character_stats)
-        ? child.character_stats[0]
-        : child.character_stats;
-      const lessonRows = Array.isArray(child.lesson_progress)
-        ? child.lesson_progress
-        : [];
+  // Batch-fetch all badges in one query rather than N per-child round trips
+  const childIds = data.map((c) => c.id);
+  const badgesByChild = new Map<string, EarnedBadge[]>();
+  try {
+    const { data: badgeRows, error: badgeError } = await supabase
+      .from("user_badges")
+      .select("user_id, badge_slug, realm_id, earned_at")
+      .in("user_id", childIds)
+      .order("realm_id", { ascending: true });
 
-      const totalXp = stats?.total_xp ?? 0;
-      const lessonsMap: Record<string, LessonProgress> = {};
-      for (const row of lessonRows) {
-        lessonsMap[row.lesson_slug] = {
-          slug: row.lesson_slug,
-          status: row.status as LessonProgress["status"],
-          quizScore: row.score ?? undefined,
-          xpEarned: row.xp_earned,
-          attempts: row.attempts,
-          sectionProgress: row.section_index,
-          completedAt: row.completed_at ?? undefined,
+    if (badgeError) {
+      console.error("[listChildren] badge fetch failed — continuing with empty badges:", badgeError.message);
+    } else {
+      for (const row of badgeRows ?? []) {
+        const realmId = row.realm_id as import("@/lib/types").RealmId;
+        const meta = REALM_BADGES[realmId];
+        const badge: EarnedBadge = {
+          slug: row.badge_slug,
+          realmId,
+          name: meta.name,
+          icon: meta.icon,
+          description: meta.description,
+          earnedAt: row.earned_at,
         };
+        const list = badgesByChild.get(row.user_id) ?? [];
+        list.push(badge);
+        badgesByChild.set(row.user_id, list);
       }
-      const completed = lessonRows.filter((r) => r.status === "completed").length;
-      const levelInfo = calculateLevel(totalXp);
-      const badges = await getBadgesForUser(child.id);
+    }
+  } catch (err) {
+    console.error("[listChildren] badge fetch threw — continuing with empty badges:", err);
+  }
 
-      return {
-        id: child.id,
-        email: child.email,
-        name: child.hero_name,
-        heroClass: child.hero_class,
-        role: "child" as const,
-        level: stats?.current_level ?? 1,
-        xp: levelInfo.xp,
-        xpToNextLevel: levelInfo.xpToNextLevel,
-        streak: stats?.streak_days ?? 0,
-        totalLessonsCompleted: completed,
-        unlockedToday: false,
-        lessons: lessonsMap,
-        badges,
+  return data.map((child) => {
+    const stats = Array.isArray(child.character_stats)
+      ? child.character_stats[0]
+      : child.character_stats;
+    const lessonRows = Array.isArray(child.lesson_progress)
+      ? child.lesson_progress
+      : [];
+
+    const totalXp = stats?.total_xp ?? 0;
+    const lessonsMap: Record<string, LessonProgress> = {};
+    for (const row of lessonRows) {
+      lessonsMap[row.lesson_slug] = {
+        slug: row.lesson_slug,
+        status: row.status as LessonProgress["status"],
+        quizScore: row.score ?? undefined,
+        xpEarned: row.xp_earned,
+        attempts: row.attempts,
+        sectionProgress: row.section_index,
+        completedAt: row.completed_at ?? undefined,
       };
-    })
-  );
+    }
+    const completed = lessonRows.filter((r) => r.status === "completed").length;
+    const levelInfo = calculateLevel(totalXp);
+
+    return {
+      id: child.id,
+      email: child.email,
+      name: child.hero_name,
+      heroClass: child.hero_class,
+      role: "child" as const,
+      level: stats?.current_level ?? 1,
+      xp: levelInfo.xp,
+      xpToNextLevel: levelInfo.xpToNextLevel,
+      streak: stats?.streak_days ?? 0,
+      totalLessonsCompleted: completed,
+      unlockedToday: false,
+      lessons: lessonsMap,
+      badges: badgesByChild.get(child.id) ?? [],
+    };
+  });
 }
 
 // ============================================================

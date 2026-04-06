@@ -13,6 +13,7 @@ import type {
 } from "@/lib/types";
 import { lessons } from "@/content/lessons";
 import { checkAndAwardBadges, getBadgesForUser } from "@/lib/badges";
+import type { NewlyAwardedBadge } from "@/lib/types";
 
 // Factory function — never return a module-level default object.
 // Prevents singleton mutation across concurrent server requests.
@@ -112,7 +113,7 @@ function rowsToProfile(
 // ============================================================
 
 export async function getProfile(userId: string): Promise<PlayerProfile | null> {
-  const [userResult, statsResult, progressResult, badgeRows] = await Promise.all([
+  const [userResult, statsResult, progressResult] = await Promise.all([
     supabase
       .from("users")
       .select("id, email, hero_name, hero_class, role")
@@ -127,11 +128,18 @@ export async function getProfile(userId: string): Promise<PlayerProfile | null> 
       .from("lesson_progress")
       .select("lesson_slug, status, score, xp_earned, attempts, section_index, completed_at")
       .eq("user_id", userId),
-    getBadgesForUser(userId),
   ]);
 
   if (userResult.error) throw new Error(userResult.error.message);
   if (!userResult.data) return null;
+
+  // Badge fetch is non-fatal — degrade to empty rather than crashing the profile load
+  let badgeRows: EarnedBadge[] = [];
+  try {
+    badgeRows = await getBadgesForUser(userId);
+  } catch (err) {
+    console.error("[getProfile] badge fetch failed — returning empty badges:", err);
+  }
 
   return rowsToProfile(
     userResult.data,
@@ -202,25 +210,39 @@ export async function completeLesson(
   await unlockNextLesson(userId, slug);
 
   // Fetch updated completed slugs for badge check
-  const { data: allProgress } = await supabase
+  const { data: allProgress, error: progressFetchError } = await supabase
     .from("lesson_progress")
     .select("lesson_slug, status")
     .eq("user_id", userId);
 
-  const completedSlugs = new Set(
-    (allProgress ?? [])
-      .filter((r) => r.status === "completed")
-      .map((r) => r.lesson_slug)
-  );
+  if (progressFetchError) {
+    console.error("[completeLesson] progress fetch for badge check failed — skipping badge check:", progressFetchError.message);
+  }
 
-  const [statsResult, newBadges] = await Promise.all([
-    supabase
-      .from("character_stats")
-      .select("current_level, streak_days")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    checkAndAwardBadges(userId, completedSlugs),
-  ]);
+  // Badge check is non-fatal — a badge failure must not break lesson completion
+  let newBadges: NewlyAwardedBadge[] = [];
+  if (!progressFetchError) {
+    const completedSlugs = new Set(
+      (allProgress ?? [])
+        .filter((r) => r.status === "completed")
+        .map((r) => r.lesson_slug)
+    );
+    try {
+      newBadges = await checkAndAwardBadges(userId, completedSlugs);
+    } catch (err) {
+      console.error("[completeLesson] badge check failed — lesson completion still succeeds:", err);
+    }
+  }
+
+  const statsResult = await supabase
+    .from("character_stats")
+    .select("current_level, streak_days")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (statsResult.error) {
+    console.error("[completeLesson] stats fetch failed:", statsResult.error.message);
+  }
 
   return {
     level: statsResult.data?.current_level ?? 1,

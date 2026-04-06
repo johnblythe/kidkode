@@ -41,10 +41,12 @@ export async function checkAndAwardBadges(
   if (completedRealmIds.length === 0) return [];
 
   // Fetch already-earned badges to avoid duplicates
-  const { data: existing } = await supabase
+  const { data: existing, error: existingError } = await supabase
     .from("user_badges")
     .select("badge_slug")
     .eq("user_id", userId);
+
+  if (existingError) throw new Error(`checkAndAwardBadges: existing badges fetch failed: ${existingError.message}`);
 
   const earnedSlugs = new Set((existing ?? []).map((r) => r.badge_slug));
 
@@ -86,7 +88,7 @@ export async function getBadgesForUser(userId: string): Promise<EarnedBadge[]> {
     const realmId = row.realm_id as RealmId;
     const badge = REALM_BADGES[realmId];
     return {
-      badgeSlug: row.badge_slug,
+      slug: row.badge_slug,
       realmId,
       name: badge.name,
       icon: badge.icon,

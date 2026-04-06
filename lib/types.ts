@@ -165,12 +165,19 @@ export function getQuizTier(score: number | undefined): QuizTier {
 }
 
 export interface EarnedBadge {
-  badgeSlug: string;   // realm slug, e.g. "apprentices-tower"
+  slug: string;        // realm slug, e.g. "apprentices-tower"
   realmId: RealmId;
   name: string;
   icon: string;
   description: string;
   earnedAt: string;    // ISO date
+}
+
+// Notification payload from completeLesson — narrower than EarnedBadge (no earnedAt/description)
+export interface NewlyAwardedBadge {
+  slug: string;
+  name: string;
+  icon: string;
 }
 
 export interface LessonProgress {
@@ -216,7 +223,7 @@ export type LookupResult =
 export interface LessonCompletionResult {
   level: number;
   streak: number;
-  newBadges?: { slug: string; name: string; icon: string }[];
+  newBadges?: NewlyAwardedBadge[];
 }
 
 // Narrowed patch type for updateLessonProgress — only fields safe to update mid-session
