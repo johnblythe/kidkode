@@ -201,6 +201,7 @@ export interface PlayerProfile {
   xpToNextLevel: number;
   streak: number;
   lastSessionDate?: string;
+  daysAway?: number;
   totalLessonsCompleted: number;
   unlockedToday: boolean;
   lessons: Record<string, LessonProgress>;
@@ -224,6 +225,9 @@ export interface LessonCompletionResult {
   level: number;
   streak: number;
   newBadges?: NewlyAwardedBadge[];
+  isFirstAttempt?: boolean;
+  bonusXp?: number;
+  comebackBonus?: { daysAway: number; multiplier: number; bonusXp: number };
 }
 
 // Narrowed patch type for updateLessonProgress — only fields safe to update mid-session

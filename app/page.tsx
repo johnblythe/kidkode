@@ -156,6 +156,34 @@ function UnlockBanner({ unlocked }: { unlocked: boolean }) {
   );
 }
 
+function ComebackBanner({ daysAway }: { daysAway: number }) {
+  const multiplier =
+    daysAway >= 14 ? "2x" : daysAway >= 7 ? "1.5x" : "1.25x";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.3, duration: 0.4 }}
+      className="mb-6 p-4 rounded-lg text-center text-sm font-semibold tracking-wide"
+      style={{
+        background: "linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(251,191,36,0.08) 100%)",
+        border: "1px solid rgba(249,115,22,0.35)",
+        boxShadow: "0 0 16px rgba(249,115,22,0.15)",
+      }}
+    >
+      <span className="flex items-center justify-center gap-2 text-fire-orange">
+        <span>🔥</span>
+        <span>
+          Welcome back! {daysAway} day{daysAway !== 1 ? "s" : ""} away — earn{" "}
+          <span className="text-gold font-black">{multiplier} XP</span> on your next lesson!
+        </span>
+        <span>🔥</span>
+      </span>
+    </motion.div>
+  );
+}
+
 function LessonNode({
   lesson,
   progress,
@@ -408,6 +436,11 @@ export default function DashboardPage() {
 
       {/* Player Header */}
       <PlayerHeader profile={profile} onSignOut={handleSignOut} />
+
+      {/* Comeback Banner — child only, 3+ days away */}
+      {profile.role === "child" && (profile.daysAway ?? 0) >= 3 && (
+        <ComebackBanner daysAway={profile.daysAway!} />
+      )}
 
       {/* Unlock Banner */}
       <UnlockBanner unlocked={profile.unlockedToday} />

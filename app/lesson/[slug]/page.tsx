@@ -9,6 +9,7 @@ import {
   updateLessonProgress,
   completeLesson,
 } from "@/app/actions/progress";
+import { logInteractionEvent } from "@/app/actions/events";
 import { useActiveUser } from "@/lib/hooks/useActiveUser";
 import type { Lesson, LessonSection } from "@/lib/types";
 import { useAudio } from "@/lib/audio/AudioContext";
@@ -50,6 +51,9 @@ export default function LessonPlayerPage() {
     streak: number;
     quizScore?: number;
     newBadges?: { slug: string; name: string; icon: string }[];
+    isFirstAttempt?: boolean;
+    bonusXp?: number;
+    comebackBonus?: { daysAway: number; multiplier: number; bonusXp: number };
   }>({
     xpEarned: 0,
     newLevel: 1,
@@ -59,6 +63,8 @@ export default function LessonPlayerPage() {
   const [, startTransition] = useTransition();
   // Debounce ref: prevent out-of-order sectionProgress writes from rapid navigation
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Section start time for section_time event logging
+  const sectionStartRef = useRef<number>(Date.now());
 
   // Redirect if not logged in
   useEffect(() => {
@@ -79,6 +85,7 @@ export default function LessonPlayerPage() {
     }
     setLesson(found);
 
+    sectionStartRef.current = Date.now();
     let cancelled = false;
     (async () => {
       try {
@@ -87,6 +94,10 @@ export default function LessonPlayerPage() {
         const lp = profile?.lessons[slug];
         if (lp && lp.sectionProgress > 0 && lp.status !== "completed") {
           setCurrentSection(lp.sectionProgress);
+        }
+        // Log lesson revisit (fire-and-forget, non-fatal)
+        if (lp?.status === "completed") {
+          void logInteractionEvent(userId, slug, "lesson_revisit", {});
         }
         await updateLessonProgress(userId, slug, { status: "in_progress" });
       } catch (err) {
@@ -127,12 +138,21 @@ export default function LessonPlayerPage() {
   }, [currentSection, lesson, playBGM]);
 
   const handleSectionComplete = useCallback(() => {
-    if (!lesson) return;
+    if (!lesson || !userId) return;
+    const durationMs = Date.now() - sectionStartRef.current;
+    const sec = lesson.sections[currentSection];
+    // Log section_time (fire-and-forget)
+    void logInteractionEvent(userId, slug, "section_time", {
+      sectionIndex: currentSection,
+      sectionType: sec.type,
+      durationMs,
+    });
+    sectionStartRef.current = Date.now();
     if (currentSection < lesson.sections.length - 1) {
       setCurrentSection((prev) => prev + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [lesson, currentSection]);
+  }, [lesson, currentSection, userId, slug]);
 
   const handleQuizComplete = useCallback(
     (score: number) => {
@@ -141,12 +161,19 @@ export default function LessonPlayerPage() {
         try {
           const result = await completeLesson(userId, slug, score, lesson.xpReward);
           sfx("unlock-celebration");
+          const totalXp =
+            lesson.xpReward +
+            (result.bonusXp ?? 0) +
+            (result.comebackBonus?.bonusXp ?? 0);
           setUnlockData({
-            xpEarned: lesson.xpReward,
+            xpEarned: totalXp,
             newLevel: result.level,
             streak: result.streak,
             quizScore: score,
             newBadges: result.newBadges,
+            isFirstAttempt: result.isFirstAttempt,
+            bonusXp: result.bonusXp,
+            comebackBonus: result.comebackBonus,
           });
         } catch (err) {
           console.error("[LessonPlayer] completeLesson error:", err);
@@ -157,6 +184,32 @@ export default function LessonPlayerPage() {
       });
     },
     [lesson, slug, userId, sfx]
+  );
+
+  // Callbacks for interaction event logging in quiz/boss components
+  const handleWrongAnswer = useCallback(
+    (questionIndex: number, selectedOption: string, correctOption: string) => {
+      if (!userId) return;
+      void logInteractionEvent(userId, slug, "wrong_answer", {
+        questionIndex,
+        selectedOption,
+        correctOption,
+      });
+    },
+    [userId, slug]
+  );
+
+  const handleBossAnswer = useCallback(
+    (bossHp: number, playerHp: number, questionIndex: number, wasCorrect: boolean) => {
+      if (!userId) return;
+      void logInteractionEvent(userId, slug, "boss_hp_snapshot", {
+        bossHp,
+        playerHp,
+        questionIndex,
+        wasCorrect,
+      });
+    },
+    [userId, slug]
   );
 
   // Not found
@@ -198,6 +251,9 @@ export default function LessonPlayerPage() {
         slug={slug}
         quizScore={unlockData.quizScore}
         newBadges={unlockData.newBadges}
+        isFirstAttempt={unlockData.isFirstAttempt}
+        bonusXp={unlockData.bonusXp}
+        comebackBonus={unlockData.comebackBonus}
       />
     );
   }
@@ -237,7 +293,14 @@ export default function LessonPlayerPage() {
             {lesson.sections.map((sec, i) => (
               <div key={i} className="flex items-center">
                 <button
-                  onClick={() => i <= currentSection && setCurrentSection(i)}
+                  onClick={() => {
+                    if (i <= currentSection) {
+                      if (i < currentSection && userId) {
+                        void logInteractionEvent(userId, slug, "section_replay", { sectionIndex: i });
+                      }
+                      setCurrentSection(i);
+                    }
+                  }}
                   className={`relative group`}
                   disabled={i > currentSection}
                   title={sectionLabel(sec)}
@@ -319,9 +382,15 @@ export default function LessonPlayerPage() {
                 boss={lesson.boss}
                 onComplete={handleQuizComplete}
                 onStudyUp={(idx) => setCurrentSection(idx)}
+                onWrongAnswer={handleWrongAnswer}
+                onBossAnswer={handleBossAnswer}
               />
             ) : section.type === "quiz" ? (
-              <QuizSection section={section} onComplete={handleQuizComplete} />
+              <QuizSection
+                section={section}
+                onComplete={handleQuizComplete}
+                onWrongAnswer={handleWrongAnswer}
+              />
             ) : null}
           </motion.div>
         </AnimatePresence>

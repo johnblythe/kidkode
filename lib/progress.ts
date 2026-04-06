@@ -178,6 +178,36 @@ export async function completeLesson(
   score: number,
   xp: number
 ): Promise<LessonCompletionResult> {
+  // Pre-read attempts and last_session_date in parallel before any writes.
+  // Must happen before updateStreak() which sets last_session_date = today.
+  const today = new Date().toISOString().split("T")[0];
+  const [existingProgressResult, statsPreResult] = await Promise.all([
+    supabase
+      .from("lesson_progress")
+      .select("attempts")
+      .eq("user_id", userId)
+      .eq("lesson_slug", slug)
+      .maybeSingle(),
+    supabase
+      .from("character_stats")
+      .select("last_session_date")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
+
+  const currentAttempts = existingProgressResult.data?.attempts ?? 0;
+  const isFirstAttempt = currentAttempts === 0;
+
+  const lastSessionDate = statsPreResult.data?.last_session_date ?? null;
+  const daysAway = lastSessionDate
+    ? Math.floor(
+        (new Date(today).getTime() - new Date(lastSessionDate).getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    : 0;
+  const comebackMultiplier =
+    daysAway >= 14 ? 2.0 : daysAway >= 7 ? 1.5 : daysAway >= 3 ? 1.25 : null;
+
   const { error: progressError } = await supabase
     .from("lesson_progress")
     .upsert(
@@ -188,6 +218,7 @@ export async function completeLesson(
         score,
         xp_earned: xp,
         section_index: 0,
+        attempts: currentAttempts + 1,
         completed_at: new Date().toISOString(),
       },
       { onConflict: "user_id,lesson_slug" }
@@ -206,6 +237,40 @@ export async function completeLesson(
     updateStreak(userId),
   ]);
   if (xpResult.error) throw new Error(xpResult.error.message);
+
+  // First-attempt bonus: +50% XP, non-fatal side-effect
+  // supabase.rpc() never throws — check .error explicitly
+  let bonusXp = 0;
+  if (isFirstAttempt) {
+    bonusXp = Math.floor(xp * 0.5);
+    const firstAttemptResult = await supabase.rpc("award_xp", {
+      p_user_id: userId,
+      p_amount: bonusXp,
+      p_reason: "first_attempt_bonus",
+      p_lesson: slug,
+    });
+    if (firstAttemptResult.error) {
+      console.error("[completeLesson] first-attempt bonus failed — lesson completion still succeeds:", firstAttemptResult.error.message);
+      bonusXp = 0;
+    }
+  }
+
+  // Comeback bonus: tiered XP for returning after 3+ days, non-fatal side-effect
+  let comebackBonusResult: LessonCompletionResult["comebackBonus"] | undefined;
+  if (comebackMultiplier !== null) {
+    const comebackBonusXp = Math.floor(xp * (comebackMultiplier - 1));
+    const comebackResult = await supabase.rpc("award_xp", {
+      p_user_id: userId,
+      p_amount: comebackBonusXp,
+      p_reason: "comeback_bonus",
+      p_lesson: slug,
+    });
+    if (comebackResult.error) {
+      console.error("[completeLesson] comeback bonus failed — lesson completion still succeeds:", comebackResult.error.message);
+    } else {
+      comebackBonusResult = { daysAway, multiplier: comebackMultiplier, bonusXp: comebackBonusXp };
+    }
+  }
 
   await unlockNextLesson(userId, slug);
 
@@ -248,6 +313,9 @@ export async function completeLesson(
     level: statsResult.data?.current_level ?? 1,
     streak: statsResult.data?.streak_days ?? 0,
     newBadges: newBadges.length > 0 ? newBadges : undefined,
+    isFirstAttempt,
+    bonusXp: isFirstAttempt ? bonusXp : undefined,
+    comebackBonus: comebackBonusResult,
   };
 }
 
@@ -340,5 +408,16 @@ export async function loadDashboard(
   userId: string
 ): Promise<PlayerProfile | null> {
   await checkAndUnlockNextLesson(userId);
-  return getProfile(userId);
+  const profile = await getProfile(userId);
+  if (!profile) return null;
+
+  const today = new Date().toISOString().split("T")[0];
+  const daysAway = profile.lastSessionDate
+    ? Math.floor(
+        (new Date(today).getTime() - new Date(profile.lastSessionDate).getTime()) /
+          (1000 * 60 * 60 * 24)
+      )
+    : 0;
+
+  return { ...profile, daysAway };
 }
