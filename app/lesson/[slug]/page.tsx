@@ -51,8 +51,7 @@ export default function LessonPlayerPage() {
     streak: number;
     quizScore?: number;
     newBadges?: { slug: string; name: string; icon: string }[];
-    isFirstAttempt?: boolean;
-    bonusXp?: number;
+    firstAttemptBonus?: { bonusXp: number };
     comebackBonus?: { daysAway: number; multiplier: number; bonusXp: number };
   }>({
     xpEarned: 0,
@@ -163,7 +162,7 @@ export default function LessonPlayerPage() {
           sfx("unlock-celebration");
           const totalXp =
             lesson.xpReward +
-            (result.bonusXp ?? 0) +
+            (result.firstAttemptBonus?.bonusXp ?? 0) +
             (result.comebackBonus?.bonusXp ?? 0);
           setUnlockData({
             xpEarned: totalXp,
@@ -171,14 +170,18 @@ export default function LessonPlayerPage() {
             streak: result.streak,
             quizScore: score,
             newBadges: result.newBadges,
-            isFirstAttempt: result.isFirstAttempt,
-            bonusXp: result.bonusXp,
+            firstAttemptBonus: result.firstAttemptBonus,
             comebackBonus: result.comebackBonus,
           });
         } catch (err) {
           console.error("[LessonPlayer] completeLesson error:", err);
-          // Still celebrate — don't punish the kid for a server error
+          // Still celebrate — show base XP so the kid isn't penalised visually for a server error
           sfx("unlock-celebration");
+          setUnlockData((prev) => ({
+            ...prev,
+            xpEarned: lesson.xpReward,
+            quizScore: score,
+          }));
         }
         setShowUnlock(true);
       });
@@ -251,8 +254,7 @@ export default function LessonPlayerPage() {
         slug={slug}
         quizScore={unlockData.quizScore}
         newBadges={unlockData.newBadges}
-        isFirstAttempt={unlockData.isFirstAttempt}
-        bonusXp={unlockData.bonusXp}
+        firstAttemptBonus={unlockData.firstAttemptBonus}
         comebackBonus={unlockData.comebackBonus}
       />
     );
@@ -298,6 +300,7 @@ export default function LessonPlayerPage() {
                       if (i < currentSection && userId) {
                         void logInteractionEvent(userId, slug, "section_replay", { sectionIndex: i });
                       }
+                      sectionStartRef.current = Date.now();
                       setCurrentSection(i);
                     }
                   }}

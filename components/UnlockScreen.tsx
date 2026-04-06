@@ -17,8 +17,7 @@ interface UnlockScreenProps {
   slug: string;
   quizScore?: number;
   newBadges?: { slug: string; name: string; icon: string }[];
-  isFirstAttempt?: boolean;
-  bonusXp?: number;
+  firstAttemptBonus?: { bonusXp: number };
   comebackBonus?: { daysAway: number; multiplier: number; bonusXp: number };
 }
 
@@ -44,7 +43,7 @@ function XPCounter({ target, duration = 2000 }: { target: number; duration?: num
   return <span>{count}</span>;
 }
 
-export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizScore, newBadges, isFirstAttempt, bonusXp, comebackBonus }: UnlockScreenProps) {
+export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizScore, newBadges, firstAttemptBonus, comebackBonus }: UnlockScreenProps) {
   const { sfx, playBGM } = useAudio();
   const reducedMotion = useReducedMotion();
   const [showContent, setShowContent] = useState(false);
@@ -220,7 +219,7 @@ export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizSco
               )}
 
               {/* First Try! bonus */}
-              {isFirstAttempt && bonusXp != null && bonusXp > 0 && (
+              {firstAttemptBonus && (
                 <motion.div
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
@@ -230,7 +229,7 @@ export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizSco
                 >
                   <span className="text-gold text-sm uppercase tracking-wider font-bold">First Try!</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl font-black text-gold">+{bonusXp}</span>
+                    <span className="text-2xl font-black text-gold">+{firstAttemptBonus.bonusXp}</span>
                     <span className="text-gold-dim text-sm">XP</span>
                   </div>
                 </motion.div>
@@ -241,7 +240,7 @@ export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizSco
                 <motion.div
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 200, delay: isFirstAttempt && bonusXp ? 0.75 : 0.6 }}
+                  transition={{ type: "spring", stiffness: 200, delay: firstAttemptBonus ? 0.75 : 0.6 }}
                   className="rpg-card px-6 py-4 flex items-center justify-between"
                   style={{ boxShadow: "0 0 20px rgba(249,115,22,0.35)", borderColor: "rgba(249,115,22,0.5)" }}
                 >
@@ -258,7 +257,7 @@ export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizSco
 
               {/* New Badges */}
               {newBadges && newBadges.length > 0 && newBadges.map((badge, i) => {
-                const bonusCardCount = (isFirstAttempt && bonusXp ? 1 : 0) + (comebackBonus ? 1 : 0);
+                const bonusCardCount = (firstAttemptBonus ? 1 : 0) + (comebackBonus ? 1 : 0);
                 return (
                   <motion.div
                     key={badge.slug}

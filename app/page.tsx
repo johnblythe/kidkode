@@ -8,7 +8,7 @@ import { lessons } from "@/content/lessons";
 import { loadDashboard } from "@/app/actions/progress";
 import { useActiveUser } from "@/lib/hooks/useActiveUser";
 import type { PlayerProfile, LessonProgress } from "@/lib/types";
-import { getQuizTier } from "@/lib/types";
+import { getQuizTier, getComebackMultiplier } from "@/lib/types";
 import VolumeToggle from "@/components/VolumeToggle";
 import { useAudio } from "@/lib/audio/AudioContext";
 import BadgeWall from "@/components/BadgeWall";
@@ -157,8 +157,7 @@ function UnlockBanner({ unlocked }: { unlocked: boolean }) {
 }
 
 function ComebackBanner({ daysAway }: { daysAway: number }) {
-  const multiplier =
-    daysAway >= 14 ? "2x" : daysAway >= 7 ? "1.5x" : "1.25x";
+  const multiplier = `${getComebackMultiplier(daysAway)}x`;
 
   return (
     <motion.div
