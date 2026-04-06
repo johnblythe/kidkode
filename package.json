@@ -6,7 +6,9 @@
     "dev": "next dev --webpack -p 3100",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "db": "psql postgresql://postgres:postgres@localhost:55122/postgres",
+    "db:migrate": "psql postgresql://postgres:postgres@localhost:55122/postgres -f"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.79.0",
