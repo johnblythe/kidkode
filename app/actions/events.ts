@@ -15,11 +15,15 @@ export async function logInteractionEvent(
   eventType: InteractionEventType,
   metadata: Record<string, unknown> = {}
 ): Promise<void> {
-  return _logInteractionEvent(userId, lessonSlug, eventType, metadata);
+  return _logInteractionEvent(userId, lessonSlug, eventType, metadata).catch((err) => {
+    console.error("[logInteractionEvent] server action uncaught error:", err);
+  });
 }
 
 export async function logInteractionEvents(
   events: InteractionEvent[]
 ): Promise<void> {
-  return _logInteractionEvents(events);
+  return _logInteractionEvents(events).catch((err) => {
+    console.error("[logInteractionEvents] server action uncaught error:", err);
+  });
 }

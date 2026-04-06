@@ -3,7 +3,7 @@
 // localStorage reads live in lib/progress-client.ts.
 
 import { supabase } from "@/lib/supabase";
-import { calculateLevel, XP_PER_LEVEL } from "@/lib/types";
+import { calculateLevel, XP_PER_LEVEL, getComebackMultiplier } from "@/lib/types";
 import type {
   PlayerProfile,
   LessonProgress,
@@ -179,7 +179,9 @@ export async function completeLesson(
   xp: number
 ): Promise<LessonCompletionResult> {
   // Pre-read attempts and last_session_date in parallel before any writes.
-  // Must happen before updateStreak() which sets last_session_date = today.
+  // Both reads must precede writes:
+  //   (1) attempts is used to compute currentAttempts+1 and isFirstAttempt before the upsert overwrites it
+  //   (2) last_session_date must be read before updateStreak() overwrites it with today
   const today = new Date().toISOString().split("T")[0];
   const [existingProgressResult, statsPreResult] = await Promise.all([
     supabase
@@ -195,18 +197,30 @@ export async function completeLesson(
       .maybeSingle(),
   ]);
 
-  const currentAttempts = existingProgressResult.data?.attempts ?? 0;
+  // On pre-read failure, default to safe direction: assume already attempted / no comeback.
+  // This prevents spurious bonus awards if the DB read fails transiently.
+  if (existingProgressResult.error) {
+    console.error("[completeLesson] attempts pre-read failed — assuming non-first attempt:", existingProgressResult.error.message);
+  }
+  if (statsPreResult.error) {
+    console.error("[completeLesson] stats pre-read failed — comeback bonus skipped:", statsPreResult.error.message);
+  }
+
+  const currentAttempts = existingProgressResult.error
+    ? 1  // safe fallback: treat as already attempted — never over-award first-attempt bonus
+    : (existingProgressResult.data?.attempts ?? 0);
   const isFirstAttempt = currentAttempts === 0;
 
-  const lastSessionDate = statsPreResult.data?.last_session_date ?? null;
+  const lastSessionDate = statsPreResult.error
+    ? null  // safe fallback: no comeback bonus on read failure
+    : (statsPreResult.data?.last_session_date ?? null);
   const daysAway = lastSessionDate
     ? Math.floor(
         (new Date(today).getTime() - new Date(lastSessionDate).getTime()) /
           (1000 * 60 * 60 * 24)
       )
     : 0;
-  const comebackMultiplier =
-    daysAway >= 14 ? 2.0 : daysAway >= 7 ? 1.5 : daysAway >= 3 ? 1.25 : null;
+  const comebackMultiplier = getComebackMultiplier(daysAway);
 
   const { error: progressError } = await supabase
     .from("lesson_progress")
@@ -225,8 +239,8 @@ export async function completeLesson(
     );
   if (progressError) throw new Error(progressError.message);
 
-  // award_xp is idempotent via partial unique indexes (migration 004).
-  // No existence pre-check needed — DB rejects duplicates atomically.
+  // award_xp is idempotent via partial unique indexes defined in migration 001.
+  // No existence pre-check needed — DB rejects duplicates via ON CONFLICT DO NOTHING atomically.
   const [xpResult] = await Promise.all([
     supabase.rpc("award_xp", {
       p_user_id: userId,
@@ -238,24 +252,28 @@ export async function completeLesson(
   ]);
   if (xpResult.error) throw new Error(xpResult.error.message);
 
-  // First-attempt bonus: +50% XP, non-fatal side-effect
-  // supabase.rpc() never throws — check .error explicitly
-  let bonusXp = 0;
+  // First-attempt bonus: +50% XP, non-fatal side-effect.
+  // supabase.rpc() resolves rather than throws — network errors are converted to { error }
+  // by the client. (Note: updateStreak() in the Promise.all above does throw on error.)
+  let firstAttemptBonusXp = 0;
   if (isFirstAttempt) {
-    bonusXp = Math.floor(xp * 0.5);
+    firstAttemptBonusXp = Math.floor(xp * 0.5);
     const firstAttemptResult = await supabase.rpc("award_xp", {
       p_user_id: userId,
-      p_amount: bonusXp,
+      p_amount: firstAttemptBonusXp,
       p_reason: "first_attempt_bonus",
       p_lesson: slug,
     });
     if (firstAttemptResult.error) {
       console.error("[completeLesson] first-attempt bonus failed — lesson completion still succeeds:", firstAttemptResult.error.message);
-      bonusXp = 0;
+      firstAttemptBonusXp = 0;
     }
   }
 
-  // Comeback bonus: tiered XP for returning after 3+ days, non-fatal side-effect
+  // Comeback bonus: tiered XP for returning after 3+ days, non-fatal side-effect.
+  // Note: idempotency key is (user_id, lesson_slug, "comeback_bonus") — a specific lesson
+  // can only earn this bonus once ever. In practice, kids progress forward and rarely replay
+  // the same lesson after multiple absences, so this is acceptable per the original design.
   let comebackBonusResult: LessonCompletionResult["comebackBonus"] | undefined;
   if (comebackMultiplier !== null) {
     const comebackBonusXp = Math.floor(xp * (comebackMultiplier - 1));
@@ -313,8 +331,9 @@ export async function completeLesson(
     level: statsResult.data?.current_level ?? 1,
     streak: statsResult.data?.streak_days ?? 0,
     newBadges: newBadges.length > 0 ? newBadges : undefined,
-    isFirstAttempt,
-    bonusXp: isFirstAttempt ? bonusXp : undefined,
+    firstAttemptBonus: isFirstAttempt && firstAttemptBonusXp > 0
+      ? { bonusXp: firstAttemptBonusXp }
+      : undefined,
     comebackBonus: comebackBonusResult,
   };
 }
@@ -418,6 +437,5 @@ export async function loadDashboard(
           (1000 * 60 * 60 * 24)
       )
     : 0;
-
   return { ...profile, daysAway };
 }

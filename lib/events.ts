@@ -5,6 +5,10 @@
 
 import { supabase } from "@/lib/supabase";
 
+/**
+ * Must match the CHECK constraint in supabase/migrations/006_interaction_events.sql.
+ * Adding a new value requires both a DB migration and an update here.
+ */
 export type InteractionEventType =
   | "wrong_answer"
   | "boss_hp_snapshot"
