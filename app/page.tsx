@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { lessons } from "@/content/lessons";
-import { loadDashboard } from "@/app/actions/progress";
+import { loadDashboard, setActiveTitle } from "@/app/actions/progress";
 import { useActiveUser } from "@/lib/hooks/useActiveUser";
 import type { PlayerProfile, LessonProgress } from "@/lib/types";
 import { getQuizTier, getComebackMultiplier } from "@/lib/types";
+import { CHARACTER_CLASSES } from "@/lib/classes";
 import VolumeToggle from "@/components/VolumeToggle";
 import { useAudio } from "@/lib/audio/AudioContext";
 import BadgeWall from "@/components/BadgeWall";
@@ -43,10 +44,15 @@ function XpBar({ xp, xpToNextLevel }: { xp: number; xpToNextLevel: number }) {
 function PlayerHeader({
   profile,
   onSignOut,
+  onTitleCycle,
 }: {
   profile: PlayerProfile;
   onSignOut: () => void;
+  onTitleCycle: () => void;
 }) {
+  const heroEmoji =
+    CHARACTER_CLASSES.find((c) => c.value === profile.heroClass)?.emoji ?? "🧙";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -57,20 +63,40 @@ function PlayerHeader({
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         {/* Avatar & Name */}
         <div className="flex items-center gap-3 flex-1">
-          <div className="w-14 h-14 rounded-lg bg-void-lighter border border-xp-purple-dim flex items-center justify-center text-3xl">
-            <span className="float">🧙</span>
+          <div
+            className={`w-14 h-14 rounded-lg bg-void-lighter flex items-center justify-center text-3xl avatar-tier-${profile.avatarTier}`}
+          >
+            <span className="float">{heroEmoji}</span>
           </div>
           <div>
             <h1 className="text-xl font-bold text-gold font-[family-name:var(--font-pixel)] text-glow-gold">
               {profile.name}
             </h1>
-            <div className="flex items-center gap-2 mt-1">
+            {/* Evolved class name subtitle */}
+            {profile.role === "child" && (
+              <div className="text-xs text-xp-purple-bright mt-0.5">{profile.evolvedClassName}</div>
+            )}
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span className="level-badge">LVL {profile.level}</span>
               {profile.streak > 0 && (
                 <span className="flex items-center gap-1 text-sm text-fire-orange">
                   <span className="streak-fire">🔥</span>
                   {profile.streak} day streak
                 </span>
+              )}
+              {/* Realm title badge — child-only, tappable when 2+ titles */}
+              {profile.role === "child" && profile.activeTitle && (
+                <button
+                  onClick={profile.availableTitles.length > 1 ? onTitleCycle : undefined}
+                  className={`text-xs px-2 py-0.5 rounded-full border border-gold/40 text-gold bg-gold/10 font-medium ${
+                    profile.availableTitles.length > 1
+                      ? "cursor-pointer hover:bg-gold/20 transition-colors"
+                      : "cursor-default"
+                  }`}
+                  title={profile.availableTitles.length > 1 ? "Tap to cycle titles" : undefined}
+                >
+                  {profile.activeTitle}
+                </button>
               )}
             </div>
           </div>
@@ -387,6 +413,25 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
+  async function handleTitleCycle() {
+    if (!profile || !userId) return;
+    const { availableTitles, activeTitle } = profile;
+    if (availableTitles.length <= 1) return;
+
+    const currentIdx = activeTitle ? availableTitles.indexOf(activeTitle) : -1;
+    const nextTitle = availableTitles[(currentIdx + 1) % availableTitles.length];
+
+    // Optimistic update
+    setProfile((prev) => prev ? { ...prev, activeTitle: nextTitle } : prev);
+
+    // Persist — roll back optimistic update on failure
+    const result = await setActiveTitle(userId, nextTitle);
+    if (!result.ok) {
+      console.error("[handleTitleCycle] title persist failed — rolling back:", result.reason);
+      setProfile((prev) => prev ? { ...prev, activeTitle } : prev);
+    }
+  }
+
   // Loading (before hydration or while fetching)
   if (!mounted || !userId || (!profile && isPending)) {
     return (
@@ -434,7 +479,7 @@ export default function DashboardPage() {
       </motion.div>
 
       {/* Player Header */}
-      <PlayerHeader profile={profile} onSignOut={handleSignOut} />
+      <PlayerHeader profile={profile} onSignOut={handleSignOut} onTitleCycle={handleTitleCycle} />
 
       {/* Comeback Banner — child only, 3+ days away */}
       {profile.role === "child" && (profile.daysAway ?? 0) >= 3 && (

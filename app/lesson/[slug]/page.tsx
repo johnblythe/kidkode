@@ -53,6 +53,8 @@ export default function LessonPlayerPage() {
     newBadges?: { slug: string; name: string; icon: string }[];
     firstAttemptBonus?: { bonusXp: number };
     comebackBonus?: { daysAway: number; multiplier: number; bonusXp: number };
+    classEvolved?: { from: string; to: string };
+    newTitle?: string;
   }>({
     xpEarned: 0,
     newLevel: 1,
@@ -172,6 +174,8 @@ export default function LessonPlayerPage() {
             newBadges: result.newBadges,
             firstAttemptBonus: result.firstAttemptBonus,
             comebackBonus: result.comebackBonus,
+            classEvolved: result.classEvolved,
+            newTitle: result.newTitle,
           });
         } catch (err) {
           console.error("[LessonPlayer] completeLesson error:", err);
@@ -256,6 +260,8 @@ export default function LessonPlayerPage() {
         newBadges={unlockData.newBadges}
         firstAttemptBonus={unlockData.firstAttemptBonus}
         comebackBonus={unlockData.comebackBonus}
+        classEvolved={unlockData.classEvolved}
+        newTitle={unlockData.newTitle}
       />
     );
   }

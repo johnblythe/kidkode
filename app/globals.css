@@ -249,6 +249,25 @@ body {
 }
 
 /* ============================================
+   Avatar Tiers — border/glow intensity per level milestone
+   Tier 1: base (L1–4), Tier 2: evolved (L5–9), Tier 3: gold (L10+)
+   ============================================ */
+
+.avatar-tier-1 {
+  border: 2px solid var(--color-xp-purple-dim);
+}
+
+.avatar-tier-2 {
+  border: 2px solid var(--color-xp-purple-bright);
+  box-shadow: 0 0 12px rgba(192, 132, 252, 0.5);
+}
+
+.avatar-tier-3 {
+  border: 2px solid var(--color-gold);
+  box-shadow: 0 0 16px rgba(251, 191, 36, 0.6), 0 0 32px rgba(251, 191, 36, 0.2);
+}
+
+/* ============================================
    Level Badge
    ============================================ */
 

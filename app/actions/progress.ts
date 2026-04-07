@@ -9,6 +9,7 @@ import {
   completeLesson as _completeLesson,
   checkAndUnlockNextLesson as _checkAndUnlockNextLesson,
   loadDashboard as _loadDashboard,
+  setActiveTitle as _setActiveTitle,
 } from "@/lib/progress";
 import type { LessonProgressPatch, LessonCompletionResult, PlayerProfile } from "@/lib/types";
 
@@ -39,4 +40,8 @@ export async function checkAndUnlockNextLesson(userId: string): Promise<void> {
 
 export async function loadDashboard(userId: string): Promise<PlayerProfile | null> {
   return _loadDashboard(userId);
+}
+
+export async function setActiveTitle(userId: string, title: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+  return _setActiveTitle(userId, title);
 }

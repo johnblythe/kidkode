@@ -10,10 +10,18 @@ import type {
   LessonProgressPatch,
   LessonCompletionResult,
   EarnedBadge,
+  HeroClass,
 } from "@/lib/types";
 import { lessons } from "@/content/lessons";
 import { checkAndAwardBadges, getBadgesForUser } from "@/lib/badges";
 import type { NewlyAwardedBadge } from "@/lib/types";
+import { CHARACTER_CLASSES, getAvatarTier, getEvolvedClassName, getAvailableTitles } from "@/lib/classes";
+
+// Known HeroClass values for runtime type guard
+const KNOWN_HERO_CLASSES: HeroClass[] = ["wizard", "knight", "elf", "ninja", "hero", "merfolk"];
+function toHeroClass(raw: string): HeroClass {
+  return KNOWN_HERO_CLASSES.includes(raw as HeroClass) ? (raw as HeroClass) : "wizard";
+}
 
 // Factory function — never return a module-level default object.
 // Prevents singleton mutation across concurrent server requests.
@@ -32,6 +40,10 @@ export function makeEmptyProfile(userId: string, email: string): PlayerProfile {
     unlockedToday: false,
     lessons: {},
     badges: [],
+    avatarTier: 1,
+    evolvedClassName: CHARACTER_CLASSES.find((c) => c.value === "wizard")?.label ?? "Wizard",
+    activeTitle: null,
+    availableTitles: [],
   };
 }
 
@@ -50,6 +62,7 @@ function rowsToProfile(
     streak_days: number;
     last_session_date: string | null;
     last_active_at: string | null;
+    active_title?: string | null;
   } | null,
   lessonRows: Array<{
     lesson_slug: string;
@@ -90,13 +103,17 @@ function rowsToProfile(
       r.completed_at.startsWith(today)
   );
 
+  const heroClass = toHeroClass(user.hero_class);
+  const level = stats?.current_level ?? 1;
+  const availableTitles = getAvailableTitles(badgeRows);
+
   return {
     id: user.id,
     email: user.email,
     name: user.hero_name,
-    heroClass: user.hero_class,
+    heroClass,
     role: user.role as "parent" | "child",
-    level: stats?.current_level ?? 1,
+    level,
     xp: levelInfo.xp,
     xpToNextLevel: levelInfo.xpToNextLevel,
     streak: stats?.streak_days ?? 0,
@@ -105,6 +122,10 @@ function rowsToProfile(
     unlockedToday: completedToday,
     lessons: lessonsMap,
     badges: badgeRows,
+    avatarTier: getAvatarTier(level),
+    evolvedClassName: getEvolvedClassName(heroClass, level),
+    activeTitle: stats?.active_title ?? null,
+    availableTitles,
   };
 }
 
@@ -113,16 +134,11 @@ function rowsToProfile(
 // ============================================================
 
 export async function getProfile(userId: string): Promise<PlayerProfile | null> {
-  const [userResult, statsResult, progressResult] = await Promise.all([
+  const [userResult, progressResult] = await Promise.all([
     supabase
       .from("users")
       .select("id, email, hero_name, hero_class, role")
       .eq("id", userId)
-      .maybeSingle(),
-    supabase
-      .from("character_stats")
-      .select("total_xp, current_level, streak_days, last_session_date, last_active_at")
-      .eq("user_id", userId)
       .maybeSingle(),
     supabase
       .from("lesson_progress")
@@ -132,6 +148,34 @@ export async function getProfile(userId: string): Promise<PlayerProfile | null> 
 
   if (userResult.error) throw new Error(userResult.error.message);
   if (!userResult.data) return null;
+
+  // Stats SELECT includes active_title. If that column doesn't exist yet (migration not applied),
+  // PostgREST returns an error — fall back to selecting without it so core stats still load.
+  let statsData: Parameters<typeof rowsToProfile>[1] = null;
+  const statsWithTitle = await supabase
+    .from("character_stats")
+    .select("total_xp, current_level, streak_days, last_session_date, last_active_at, active_title")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (statsWithTitle.error) {
+    console.warn("[getProfile] stats+active_title fetch failed — retrying without active_title:", statsWithTitle.error.message);
+    const statsBasic = await supabase
+      .from("character_stats")
+      .select("total_xp, current_level, streak_days, last_session_date, last_active_at")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (statsBasic.error) {
+      console.error("[getProfile] fallback stats fetch also failed — profile will show zero stats:", statsBasic.error.message);
+    }
+    statsData = statsBasic.data ? { ...statsBasic.data, active_title: null } : null;
+  } else {
+    statsData = statsWithTitle.data as Parameters<typeof rowsToProfile>[1];
+  }
+
+  if (progressResult.error) {
+    console.error("[getProfile] lesson_progress fetch failed — returning empty lessons:", progressResult.error.message);
+  }
 
   // Badge fetch is non-fatal — degrade to empty rather than crashing the profile load
   let badgeRows: EarnedBadge[] = [];
@@ -143,7 +187,7 @@ export async function getProfile(userId: string): Promise<PlayerProfile | null> 
 
   return rowsToProfile(
     userResult.data,
-    statsResult.data,
+    statsData,
     progressResult.data ?? [],
     badgeRows
   );
@@ -178,12 +222,14 @@ export async function completeLesson(
   score: number,
   xp: number
 ): Promise<LessonCompletionResult> {
-  // Pre-read attempts and last_session_date in parallel before any writes.
-  // Both reads must precede writes:
-  //   (1) attempts is used to compute currentAttempts+1 and isFirstAttempt before the upsert overwrites it
-  //   (2) last_session_date must be read before updateStreak() overwrites it with today
+  // Pre-read attempts, last_session_date, current_level, and hero_class in parallel before any writes.
+  // Reads must precede writes:
+  //   (1) attempts → isFirstAttempt check before upsert overwrites it
+  //   (2) last_session_date → comeback bonus check before updateStreak() overwrites it
+  //   (3) current_level → pre-write level baseline for evolution threshold detection (Unit 6)
+  //   (4) hero_class → needed for evolution detection
   const today = new Date().toISOString().split("T")[0];
-  const [existingProgressResult, statsPreResult] = await Promise.all([
+  const [existingProgressResult, statsPreResult, userPreResult] = await Promise.all([
     supabase
       .from("lesson_progress")
       .select("attempts")
@@ -192,8 +238,13 @@ export async function completeLesson(
       .maybeSingle(),
     supabase
       .from("character_stats")
-      .select("last_session_date")
+      .select("last_session_date, current_level")
       .eq("user_id", userId)
+      .maybeSingle(),
+    supabase
+      .from("users")
+      .select("hero_class")
+      .eq("id", userId)
       .maybeSingle(),
   ]);
 
@@ -205,11 +256,18 @@ export async function completeLesson(
   if (statsPreResult.error) {
     console.error("[completeLesson] stats pre-read failed — comeback bonus skipped:", statsPreResult.error.message);
   }
+  if (userPreResult.error) {
+    console.error("[completeLesson] hero_class pre-read failed — evolution detection skipped:", userPreResult.error.message);
+  }
 
   const currentAttempts = existingProgressResult.error
     ? 1  // safe fallback: treat as already attempted — never over-award first-attempt bonus
     : (existingProgressResult.data?.attempts ?? 0);
   const isFirstAttempt = currentAttempts === 0;
+
+  // Pre-write level for evolution threshold comparison
+  const preLevelForEvolution = statsPreResult.data?.current_level ?? null;
+  const heroClassForEvolution = userPreResult.data?.hero_class ?? null;
 
   const lastSessionDate = statsPreResult.error
     ? null  // safe fallback: no comeback bonus on read failure
@@ -304,6 +362,7 @@ export async function completeLesson(
 
   // Badge check is non-fatal — a badge failure must not break lesson completion
   let newBadges: NewlyAwardedBadge[] = [];
+  let newTitle: string | undefined;
   if (!progressFetchError) {
     const completedSlugs = new Set(
       (allProgress ?? [])
@@ -311,7 +370,9 @@ export async function completeLesson(
         .map((r) => r.lesson_slug)
     );
     try {
-      newBadges = await checkAndAwardBadges(userId, completedSlugs);
+      const badgeResult = await checkAndAwardBadges(userId, completedSlugs);
+      newBadges = badgeResult.badges;
+      newTitle = badgeResult.newTitle;
     } catch (err) {
       console.error("[completeLesson] badge check failed — lesson completion still succeeds:", err);
     }
@@ -327,15 +388,80 @@ export async function completeLesson(
     console.error("[completeLesson] stats fetch failed:", statsResult.error.message);
   }
 
+  const newLevel = statsResult.data?.current_level ?? 1;
+
+  // Class evolution detection — non-fatal. Compare pre-write level vs post-write level.
+  // award_xp returns void — new level comes from the post-write SELECT above.
+  // NOTE: getEvolvedClassName and toHeroClass are documented as non-throwing (lib/classes.ts).
+  // The try/catch is a safety net in case that contract is broken by a future change.
+  let classEvolved: LessonCompletionResult["classEvolved"] | undefined;
+  try {
+    if (preLevelForEvolution !== null && heroClassForEvolution !== null) {
+      const heroClass = toHeroClass(heroClassForEvolution);
+      const oldEvolution = getEvolvedClassName(heroClass, preLevelForEvolution);
+      const newEvolution = getEvolvedClassName(heroClass, newLevel);
+      if (oldEvolution !== newEvolution) {
+        classEvolved = { from: oldEvolution, to: newEvolution };
+      }
+    }
+  } catch (err) {
+    console.error("[completeLesson] evolution detection failed — lesson completion still succeeds:", err);
+  }
+
   return {
-    level: statsResult.data?.current_level ?? 1,
+    level: newLevel,
     streak: statsResult.data?.streak_days ?? 0,
     newBadges: newBadges.length > 0 ? newBadges : undefined,
     firstAttemptBonus: isFirstAttempt && firstAttemptBonusXp > 0
       ? { bonusXp: firstAttemptBonusXp }
       : undefined,
     comebackBonus: comebackBonusResult,
+    classEvolved,
+    newTitle,
   };
+}
+
+/**
+ * Persists the kid's active title choice.
+ * Validates that `title` is in the user's earned titles before writing.
+ * No-op (with console.warn) if title is not earned or is empty.
+ * Never throws — errors are logged.
+ */
+export async function setActiveTitle(userId: string, title: string): Promise<{ ok: true } | { ok: false; reason: string }> {
+  if (!title) {
+    console.warn("[setActiveTitle] empty title — skipping");
+    return { ok: false, reason: "empty title" };
+  }
+
+  // Validate against earned titles — must be earned, not just a valid title string
+  let earnedTitles: string[] = [];
+  try {
+    const badges = await getBadgesForUser(userId);
+    earnedTitles = getAvailableTitles(badges);
+  } catch (err) {
+    console.error("[setActiveTitle] badge fetch failed — cannot validate title:", err);
+    return { ok: false, reason: "badge fetch failed" };
+  }
+
+  if (!earnedTitles.includes(title)) {
+    console.warn(`[setActiveTitle] title "${title}" not earned by user ${userId} — skipping`);
+    return { ok: false, reason: "title not earned" };
+  }
+
+  try {
+    const { error } = await supabase
+      .from("character_stats")
+      .update({ active_title: title })
+      .eq("user_id", userId);
+    if (error) {
+      console.error("[setActiveTitle] DB update failed:", error.message);
+      return { ok: false, reason: error.message };
+    }
+  } catch (err) {
+    console.error("[setActiveTitle] unexpected error:", err);
+    return { ok: false, reason: String(err) };
+  }
+  return { ok: true };
 }
 
 async function updateStreak(userId: string): Promise<void> {

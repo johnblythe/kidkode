@@ -194,7 +194,7 @@ export interface PlayerProfile {
   id: string;
   email: string;
   name: string;
-  heroClass: string;
+  heroClass: HeroClass;
   role: "parent" | "child";
   level: number;
   xp: number;
@@ -206,6 +206,11 @@ export interface PlayerProfile {
   unlockedToday: boolean;
   lessons: Record<string, LessonProgress>;
   badges: EarnedBadge[];
+  // Cosmetic identity fields (avatar tier, evolution, realm titles)
+  avatarTier: 1 | 2 | 3;
+  evolvedClassName: string;
+  activeTitle: string | null;
+  availableTitles: string[];
 }
 
 // Session stored in localStorage — login credentials, separate from game stats
@@ -239,6 +244,8 @@ export interface LessonCompletionResult {
   // Presence of the object is the flag — no separate isFirstAttempt boolean needed
   firstAttemptBonus?: { bonusXp: number };
   comebackBonus?: { daysAway: number; multiplier: ComebackMultiplier; bonusXp: number };
+  classEvolved?: { from: string; to: string };
+  newTitle?: string;
 }
 
 // Narrowed patch type for updateLessonProgress — only fields safe to update mid-session
