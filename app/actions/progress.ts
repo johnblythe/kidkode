@@ -42,6 +42,6 @@ export async function loadDashboard(userId: string): Promise<PlayerProfile | nul
   return _loadDashboard(userId);
 }
 
-export async function setActiveTitle(userId: string, title: string): Promise<void> {
+export async function setActiveTitle(userId: string, title: string): Promise<{ ok: true } | { ok: false; reason: string }> {
   return _setActiveTitle(userId, title);
 }

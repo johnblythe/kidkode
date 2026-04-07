@@ -223,7 +223,7 @@ export async function listChildren(parentId: string): Promise<PlayerProfile[]> {
       badges,
       avatarTier: getAvatarTier(level),
       evolvedClassName: getEvolvedClassName(heroClass, level),
-      activeTitle: null,
+      activeTitle: null, // intentionally omitted — parent dashboard does not display active titles
       availableTitles: getAvailableTitles(badges),
     };
   });

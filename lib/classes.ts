@@ -87,6 +87,9 @@ export function getEvolvedClassName(heroClass: HeroClass, level: number): string
  * Accepts the EarnedBadge shape (slug field, not badge_slug).
  * Filters out slugs not found in REALM_TITLES.
  */
+// NOTE: badge.slug is expected to equal the realm's slug (set in checkAndAwardBadges → user_badges.badge_slug).
+// REALM_TITLES is keyed by realm slug. If non-realm badges are added in future,
+// this lookup will silently return no title for them — that is intentional.
 export function getAvailableTitles(badges: { slug: string }[]): string[] {
   const titles: string[] = [];
   for (const badge of badges) {

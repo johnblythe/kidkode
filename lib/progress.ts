@@ -165,9 +165,16 @@ export async function getProfile(userId: string): Promise<PlayerProfile | null> 
       .select("total_xp, current_level, streak_days, last_session_date, last_active_at")
       .eq("user_id", userId)
       .maybeSingle();
+    if (statsBasic.error) {
+      console.error("[getProfile] fallback stats fetch also failed — profile will show zero stats:", statsBasic.error.message);
+    }
     statsData = statsBasic.data ? { ...statsBasic.data, active_title: null } : null;
   } else {
     statsData = statsWithTitle.data as Parameters<typeof rowsToProfile>[1];
+  }
+
+  if (progressResult.error) {
+    console.error("[getProfile] lesson_progress fetch failed — returning empty lessons:", progressResult.error.message);
   }
 
   // Badge fetch is non-fatal — degrade to empty rather than crashing the profile load
@@ -248,6 +255,9 @@ export async function completeLesson(
   }
   if (statsPreResult.error) {
     console.error("[completeLesson] stats pre-read failed — comeback bonus skipped:", statsPreResult.error.message);
+  }
+  if (userPreResult.error) {
+    console.error("[completeLesson] hero_class pre-read failed — evolution detection skipped:", userPreResult.error.message);
   }
 
   const currentAttempts = existingProgressResult.error
@@ -382,6 +392,8 @@ export async function completeLesson(
 
   // Class evolution detection — non-fatal. Compare pre-write level vs post-write level.
   // award_xp returns void — new level comes from the post-write SELECT above.
+  // NOTE: getEvolvedClassName and toHeroClass are documented as non-throwing (lib/classes.ts).
+  // The try/catch is a safety net in case that contract is broken by a future change.
   let classEvolved: LessonCompletionResult["classEvolved"] | undefined;
   try {
     if (preLevelForEvolution !== null && heroClassForEvolution !== null) {
@@ -415,10 +427,10 @@ export async function completeLesson(
  * No-op (with console.warn) if title is not earned or is empty.
  * Never throws — errors are logged.
  */
-export async function setActiveTitle(userId: string, title: string): Promise<void> {
+export async function setActiveTitle(userId: string, title: string): Promise<{ ok: true } | { ok: false; reason: string }> {
   if (!title) {
     console.warn("[setActiveTitle] empty title — skipping");
-    return;
+    return { ok: false, reason: "empty title" };
   }
 
   // Validate against earned titles — must be earned, not just a valid title string
@@ -428,12 +440,12 @@ export async function setActiveTitle(userId: string, title: string): Promise<voi
     earnedTitles = getAvailableTitles(badges);
   } catch (err) {
     console.error("[setActiveTitle] badge fetch failed — cannot validate title:", err);
-    return;
+    return { ok: false, reason: "badge fetch failed" };
   }
 
   if (!earnedTitles.includes(title)) {
     console.warn(`[setActiveTitle] title "${title}" not earned by user ${userId} — skipping`);
-    return;
+    return { ok: false, reason: "title not earned" };
   }
 
   try {
@@ -443,10 +455,13 @@ export async function setActiveTitle(userId: string, title: string): Promise<voi
       .eq("user_id", userId);
     if (error) {
       console.error("[setActiveTitle] DB update failed:", error.message);
+      return { ok: false, reason: error.message };
     }
   } catch (err) {
     console.error("[setActiveTitle] unexpected error:", err);
+    return { ok: false, reason: String(err) };
   }
+  return { ok: true };
 }
 
 async function updateStreak(userId: string): Promise<void> {

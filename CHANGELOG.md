@@ -4,6 +4,14 @@ All notable changes to KidKode will be documented here.
 
 ## [Unreleased]
 
+### Fixed
+- `getProfile` fallback stats query error now logged — prevents silent Level 1 regression when DB retry fails (#37)
+- `completeLesson` `hero_class` pre-read error now logged — evolution detection no longer silently skips without a trace (#37)
+- `getProfile` `lesson_progress` fetch error now logged — empty lesson list no longer returned silently (#37)
+- `setActiveTitle` now returns `{ ok, reason }` discriminated union; client rolls back optimistic title update on failure (#37)
+- `checkAndAwardBadges` missing `REALM_TITLES`/`REALM_BADGES` entries now log as `error` instead of `warn` (#37)
+- `REALM_BADGES` config lookup null-guarded in `checkAndAwardBadges` and `getBadgesForUser` — prevents buried TypeError (#37)
+
 ## [1.3.0] - 2026-04-07
 
 ### Added

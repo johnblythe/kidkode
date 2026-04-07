@@ -413,7 +413,7 @@ export default function DashboardPage() {
     router.push("/login");
   }
 
-  function handleTitleCycle() {
+  async function handleTitleCycle() {
     if (!profile || !userId) return;
     const { availableTitles, activeTitle } = profile;
     if (availableTitles.length <= 1) return;
@@ -424,8 +424,12 @@ export default function DashboardPage() {
     // Optimistic update
     setProfile((prev) => prev ? { ...prev, activeTitle: nextTitle } : prev);
 
-    // Persist in background — fire-and-forget
-    void setActiveTitle(userId, nextTitle);
+    // Persist — roll back optimistic update on failure
+    const result = await setActiveTitle(userId, nextTitle);
+    if (!result.ok) {
+      console.error("[handleTitleCycle] title persist failed — rolling back:", result.reason);
+      setProfile((prev) => prev ? { ...prev, activeTitle } : prev);
+    }
   }
 
   // Loading (before hydration or while fetching)

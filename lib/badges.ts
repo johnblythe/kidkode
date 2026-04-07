@@ -85,25 +85,28 @@ export async function checkAndAwardBadges(
           .update({ active_title: titleString })
           .eq("user_id", userId);
         if (titleError) {
-          console.warn("[checkAndAwardBadges] active_title update failed:", titleError.message);
+          console.error("[checkAndAwardBadges] active_title update failed:", titleError.message);
         } else {
           newTitle = titleString;
         }
       } else {
-        console.warn(`[checkAndAwardBadges] no REALM_TITLES entry for slug "${realm.slug}" — skipping title update`);
+        console.error(`[checkAndAwardBadges] REALM_TITLES missing entry for slug "${realm.slug}" — title not awarded. Add this slug to lib/classes.ts REALM_TITLES.`);
       }
     } else {
-      console.warn(`[checkAndAwardBadges] no realm found for realmId ${lastInserted.realm_id} — skipping title update`);
+      console.error(`[checkAndAwardBadges] realm not found for realmId ${lastInserted.realm_id} — badge inserted but title cannot be set. Check content/realms.ts and DB realm IDs.`);
     }
   } catch (err) {
     console.error("[checkAndAwardBadges] title auto-set threw unexpectedly:", err);
   }
 
-  const badges = toInsert.map((r) => ({
-    slug: r.badge_slug,
-    name: REALM_BADGES[r.realm_id as RealmId].name,
-    icon: REALM_BADGES[r.realm_id as RealmId].icon,
-  }));
+  const badges = toInsert.flatMap((r) => {
+    const meta = REALM_BADGES[r.realm_id as RealmId];
+    if (!meta) {
+      console.error(`[checkAndAwardBadges] REALM_BADGES missing entry for realm_id ${r.realm_id} — badge cannot be mapped. Add to lib/badge-config.ts.`);
+      return [];
+    }
+    return [{ slug: r.badge_slug, name: meta.name, icon: meta.icon }];
+  });
 
   return { badges, newTitle };
 }
@@ -121,16 +124,20 @@ export async function getBadgesForUser(userId: string): Promise<EarnedBadge[]> {
   if (error) throw new Error(error.message);
   if (!data) return [];
 
-  return data.map((row) => {
+  return data.flatMap((row) => {
     const realmId = row.realm_id as RealmId;
     const badge = REALM_BADGES[realmId];
-    return {
+    if (!badge) {
+      console.error(`[getBadgesForUser] REALM_BADGES missing entry for realm_id ${realmId} — skipping badge. Add to lib/badge-config.ts.`);
+      return [];
+    }
+    return [{
       slug: row.badge_slug,
       realmId,
       name: badge.name,
       icon: badge.icon,
       description: badge.description,
       earnedAt: row.earned_at,
-    };
+    }];
   });
 }
