@@ -17,6 +17,8 @@ interface UnlockScreenProps {
   slug: string;
   quizScore?: number;
   newBadges?: { slug: string; name: string; icon: string }[];
+  firstAttemptBonus?: { bonusXp: number };
+  comebackBonus?: { daysAway: number; multiplier: number; bonusXp: number };
 }
 
 function XPCounter({ target, duration = 2000 }: { target: number; duration?: number }) {
@@ -41,7 +43,7 @@ function XPCounter({ target, duration = 2000 }: { target: number; duration?: num
   return <span>{count}</span>;
 }
 
-export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizScore, newBadges }: UnlockScreenProps) {
+export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizScore, newBadges, firstAttemptBonus, comebackBonus }: UnlockScreenProps) {
   const { sfx, playBGM } = useAudio();
   const reducedMotion = useReducedMotion();
   const [showContent, setShowContent] = useState(false);
@@ -216,23 +218,63 @@ export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizSco
                 </motion.div>
               )}
 
-              {/* New Badges */}
-              {newBadges && newBadges.length > 0 && newBadges.map((badge, i) => (
+              {/* First Try! bonus */}
+              {firstAttemptBonus && (
                 <motion.div
-                  key={badge.slug}
                   initial={{ scale: 0.5, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 200, delay: 0.6 + i * 0.15 }}
-                  className="rpg-card px-6 py-4 flex items-center justify-between border-gold/40"
-                  style={{ boxShadow: "0 0 20px rgba(251,191,36,0.3)" }}
+                  transition={{ type: "spring", stiffness: 200, delay: 0.6 }}
+                  className="rpg-card px-6 py-4 flex items-center justify-between border-gold/60"
+                  style={{ boxShadow: "0 0 20px rgba(251,191,36,0.4)" }}
                 >
-                  <span className="text-slate-400 text-sm uppercase tracking-wider">Realm Badge</span>
+                  <span className="text-gold text-sm uppercase tracking-wider font-bold">First Try!</span>
                   <div className="flex items-center gap-2">
-                    <span className="text-2xl">{badge.icon}</span>
-                    <span className="text-gold font-bold text-sm">{badge.name}</span>
+                    <span className="text-2xl font-black text-gold">+{firstAttemptBonus.bonusXp}</span>
+                    <span className="text-gold-dim text-sm">XP</span>
                   </div>
                 </motion.div>
-              ))}
+              )}
+
+              {/* Welcome Back! comeback bonus */}
+              {comebackBonus && (
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 200, delay: firstAttemptBonus ? 0.75 : 0.6 }}
+                  className="rpg-card px-6 py-4 flex items-center justify-between"
+                  style={{ boxShadow: "0 0 20px rgba(249,115,22,0.35)", borderColor: "rgba(249,115,22,0.5)" }}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-fire-orange text-sm uppercase tracking-wider font-bold">Welcome Back!</span>
+                    <span className="text-slate-500 text-xs">{comebackBonus.daysAway}d away → {comebackBonus.multiplier}x</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-black text-fire-orange">+{comebackBonus.bonusXp}</span>
+                    <span className="text-fire-orange/60 text-sm">XP</span>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* New Badges */}
+              {newBadges && newBadges.length > 0 && newBadges.map((badge, i) => {
+                const bonusCardCount = (firstAttemptBonus ? 1 : 0) + (comebackBonus ? 1 : 0);
+                return (
+                  <motion.div
+                    key={badge.slug}
+                    initial={{ scale: 0.5, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ type: "spring", stiffness: 200, delay: 0.6 + bonusCardCount * 0.15 + i * 0.15 }}
+                    className="rpg-card px-6 py-4 flex items-center justify-between border-gold/40"
+                    style={{ boxShadow: "0 0 20px rgba(251,191,36,0.3)" }}
+                  >
+                    <span className="text-slate-400 text-sm uppercase tracking-wider">Realm Badge</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{badge.icon}</span>
+                      <span className="text-gold font-bold text-sm">{badge.name}</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </motion.div>
           )}
         </AnimatePresence>

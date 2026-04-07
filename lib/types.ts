@@ -201,6 +201,7 @@ export interface PlayerProfile {
   xpToNextLevel: number;
   streak: number;
   lastSessionDate?: string;
+  daysAway?: number;
   totalLessonsCompleted: number;
   unlockedToday: boolean;
   lessons: Record<string, LessonProgress>;
@@ -219,11 +220,25 @@ export type LookupResult =
   | { found: true; profile: PlayerProfile; session: UserSession }
   | { found: false };
 
+// Comeback multiplier tiers — 3d/7d/14d+ thresholds.
+// Must stay in sync with ComebackBanner display logic in app/page.tsx.
+export type ComebackMultiplier = 1.25 | 1.5 | 2.0;
+
+export function getComebackMultiplier(daysAway: number): ComebackMultiplier | null {
+  if (daysAway >= 14) return 2.0;
+  if (daysAway >= 7)  return 1.5;
+  if (daysAway >= 3)  return 1.25;
+  return null;
+}
+
 // Return type for completeLesson Server Action
 export interface LessonCompletionResult {
   level: number;
   streak: number;
   newBadges?: NewlyAwardedBadge[];
+  // Presence of the object is the flag — no separate isFirstAttempt boolean needed
+  firstAttemptBonus?: { bonusXp: number };
+  comebackBonus?: { daysAway: number; multiplier: ComebackMultiplier; bonusXp: number };
 }
 
 // Narrowed patch type for updateLessonProgress — only fields safe to update mid-session

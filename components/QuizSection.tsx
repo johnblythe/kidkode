@@ -9,6 +9,7 @@ import { resolveCorrectIndex } from "@/lib/quiz-utils";
 interface QuizSectionProps {
   section: QuizSectionType;
   onComplete: (score: number) => void;
+  onWrongAnswer?: (questionIndex: number, selectedOption: string, correctOption: string) => void;
 }
 
 function QuestionCard({
@@ -16,11 +17,13 @@ function QuestionCard({
   questionNum,
   totalQuestions,
   onAnswer,
+  onWrongAnswer,
 }: {
   question: QuizQuestion;
   questionNum: number;
   totalQuestions: number;
   onAnswer: (correct: boolean) => void;
+  onWrongAnswer?: (questionIndex: number, selectedOption: string, correctOption: string) => void;
 }) {
   const { sfx } = useAudio();
   const [selected, setSelected] = useState<number | null>(null);
@@ -35,6 +38,10 @@ function QuestionCard({
     setSelected(idx);
     setRevealed(true);
     sfx(idx === correctIdx ? "correct-ding" : "wrong-buzz");
+    if (idx !== correctIdx) {
+      const opts = question.options || ["True", "False"];
+      onWrongAnswer?.(questionNum - 1, opts[idx] ?? String(idx), opts[correctIdx] ?? String(correctIdx));
+    }
   };
 
   const handleNext = () => {
@@ -288,7 +295,7 @@ function ScoreScreen({
   );
 }
 
-export default function QuizSection({ section, onComplete }: QuizSectionProps) {
+export default function QuizSection({ section, onComplete, onWrongAnswer }: QuizSectionProps) {
   const { sfx } = useAudio();
   const [currentQ, setCurrentQ] = useState(0);
   const [correctCount, setCorrectCount] = useState(0);
@@ -377,6 +384,7 @@ export default function QuizSection({ section, onComplete }: QuizSectionProps) {
               questionNum={currentQ + 1}
               totalQuestions={questions.length}
               onAnswer={handleAnswer}
+              onWrongAnswer={onWrongAnswer}
             />
           )}
         </AnimatePresence>

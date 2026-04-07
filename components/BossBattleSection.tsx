@@ -13,6 +13,8 @@ interface BossBattleProps {
   boss: BossData;
   onComplete: (score: number) => void;
   onStudyUp: (sectionIndex: number) => void;
+  onWrongAnswer?: (questionIndex: number, selectedOption: string, correctOption: string) => void;
+  onBossAnswer?: (bossHp: number, playerHp: number, questionIndex: number, wasCorrect: boolean) => void;
 }
 
 type Phase = "intro" | "battle" | "victory" | "defeat";
@@ -154,6 +156,8 @@ export default function BossBattleSection({
   boss,
   onComplete,
   onStudyUp,
+  onWrongAnswer,
+  onBossAnswer,
 }: BossBattleProps) {
   const { sfx } = useAudio();
   const reducedMotion = useReducedMotion();
@@ -248,6 +252,7 @@ export default function BossBattleSection({
         setDamageShow(boss.damagePerCorrect);
         correctCountRef.current += 1;
         setCorrectCount(correctCountRef.current);
+        onBossAnswer?.(newBossHp, playerHp, currentQ, true);
         // Delay hit VFX and advance
         safeTimeout(() => {
           setAnswerFlash(null);
@@ -265,6 +270,9 @@ export default function BossBattleSection({
         const newPlayerHp = playerHp - 1;
         setPlayerHp(newPlayerHp);
         setPlayerDamageCount((c) => c + 1);
+        const opts = question.options || ["True", "False"];
+        onWrongAnswer?.(currentQ, opts[selectedIdx] ?? String(selectedIdx), opts[correctIdx] ?? String(correctIdx));
+        onBossAnswer?.(bossHp, newPlayerHp, currentQ, false);
         // Delay boss attack VFX and advance
         safeTimeout(() => {
           setAnswerFlash(null);

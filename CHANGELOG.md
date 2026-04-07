@@ -4,6 +4,30 @@ All notable changes to KidKode will be documented here.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-04-06
+
+### Added
+- First-attempt bonus: 1.5x XP (50% extra) when completing a lesson for the first time (#36)
+- Comeback bonus: tiered XP multiplier for returning after 3+ days away — 1.25x (3d), 1.5x (7d), 2x (14d+) (#36)
+- `interaction_events` table (migration 006) for granular kid interaction logging
+- `lib/events.ts` — `logInteractionEvent` / `logInteractionEvents`, fire-and-forget, non-fatal
+- `app/actions/events.ts` — thin server action wrappers for event logging
+- Wrong-answer events logged during quiz and boss battle with question index, selected/correct option
+- Boss HP snapshot events logged after each boss battle answer
+- Section completion time events logged with duration and section type
+- Lesson revisit events logged when a completed lesson is re-entered
+- Section replay events logged when navigating back to an earlier section
+- "FIRST TRY!" card on UnlockScreen when first-attempt bonus is earned
+- "WELCOME BACK!" card on UnlockScreen when comeback bonus is earned
+- Dashboard "Welcome Back!" banner for child accounts returning after 3+ days
+
+### Changed
+- `lesson_progress.attempts` is now incremented on every `completeLesson()` call (#36)
+- `LessonCompletionResult` — added optional `isFirstAttempt`, `bonusXp`, `comebackBonus`
+- `PlayerProfile` — added optional `daysAway` (populated by `loadDashboard`)
+- `UnlockScreen` — `xpEarned` now reflects total XP (base + all bonuses); bonus breakdown shown as separate cards
+- Bonus XP awards use distinct `reason` values (`first_attempt_bonus`, `comeback_bonus`) — idempotent via existing partial unique indexes
+
 ## [1.1.0] - 2026-04-05
 
 ### Added
