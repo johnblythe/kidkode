@@ -5,16 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { createUser } from "@/app/actions/users";
 import { useActiveUser } from "@/lib/hooks/useActiveUser";
-import type { HeroClass } from "@/lib/types";
-
-const CHARACTER_CLASSES: { emoji: string; label: string; value: HeroClass }[] = [
-  { emoji: "🧙", label: "Wizard", value: "wizard" },
-  { emoji: "🪖", label: "Knight", value: "knight" },
-  { emoji: "🧝", label: "Elf", value: "elf" },
-  { emoji: "🥷", label: "Ninja", value: "ninja" },
-  { emoji: "🦸", label: "Hero", value: "hero" },
-  { emoji: "🧜", label: "Merfolk", value: "merfolk" },
-];
+import { CHARACTER_CLASSES } from "@/lib/classes";
 
 const MAX_NAME_LENGTH = 20;
 

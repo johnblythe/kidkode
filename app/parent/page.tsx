@@ -7,17 +7,8 @@ import Link from "next/link";
 import { useActiveUser } from "@/lib/hooks/useActiveUser";
 import { listChildren, createChild } from "@/app/actions/users";
 import { getProfile } from "@/app/actions/progress";
-import type { PlayerProfile, HeroClass } from "@/lib/types";
-
-const CHARACTER_CLASSES: { emoji: string; label: string; value: HeroClass }[] =
-  [
-    { emoji: "🧙", label: "Wizard", value: "wizard" },
-    { emoji: "🪖", label: "Knight", value: "knight" },
-    { emoji: "🧝", label: "Elf", value: "elf" },
-    { emoji: "🥷", label: "Ninja", value: "ninja" },
-    { emoji: "🦸", label: "Hero", value: "hero" },
-    { emoji: "🧜", label: "Merfolk", value: "merfolk" },
-  ];
+import type { PlayerProfile } from "@/lib/types";
+import { CHARACTER_CLASSES } from "@/lib/classes";
 
 export default function ParentPage() {
   const router = useRouter();

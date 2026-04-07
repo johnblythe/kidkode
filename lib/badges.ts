@@ -6,6 +6,7 @@ import { lessons } from "@/content/lessons";
 import { realms } from "@/content/realms";
 import type { EarnedBadge, RealmId } from "@/lib/types";
 import { REALM_BADGES } from "@/lib/badge-config";
+import { REALM_TITLES } from "@/lib/classes";
 
 export { REALM_BADGES };
 
@@ -20,14 +21,20 @@ function lessonsByRealm(): Map<RealmId, string[]> {
   return map;
 }
 
+export interface BadgeAwardResult {
+  badges: { slug: string; name: string; icon: string }[];
+  newTitle?: string;
+}
+
 /**
  * Called after completeLesson(). Checks which realm badges the user has now
- * earned and inserts any missing ones. Returns slugs of newly awarded badges.
+ * earned and inserts any missing ones. Returns newly awarded badges and the
+ * latest auto-set realm title (if a new badge was earned).
  */
 export async function checkAndAwardBadges(
   userId: string,
   completedSlugs: Set<string>
-): Promise<{ slug: string; name: string; icon: string }[]> {
+): Promise<BadgeAwardResult> {
   const byRealm = lessonsByRealm();
 
   // Find realms where every lesson is completed
@@ -38,7 +45,7 @@ export async function checkAndAwardBadges(
     }
   }
 
-  if (completedRealmIds.length === 0) return [];
+  if (completedRealmIds.length === 0) return { badges: [] };
 
   // Fetch already-earned badges to avoid duplicates
   const { data: existing, error: existingError } = await supabase
@@ -59,16 +66,46 @@ export async function checkAndAwardBadges(
     })
     .filter((r): r is NonNullable<typeof r> => r !== null && !earnedSlugs.has(r.badge_slug));
 
-  if (toInsert.length === 0) return [];
+  if (toInsert.length === 0) return { badges: [] };
 
   const { error } = await supabase.from("user_badges").insert(toInsert);
   if (error) throw new Error(error.message);
 
-  return toInsert.map((r) => ({
+  // Auto-set active_title to the latest newly earned realm's title — non-fatal
+  // Uses the last inserted badge to reflect the most recent realm completed
+  let newTitle: string | undefined;
+  const lastInserted = toInsert[toInsert.length - 1];
+  try {
+    const realm = realms.find((r) => r.id === lastInserted.realm_id);
+    if (realm) {
+      const titleString = REALM_TITLES[realm.slug];
+      if (titleString !== undefined) {
+        const { error: titleError } = await supabase
+          .from("character_stats")
+          .update({ active_title: titleString })
+          .eq("user_id", userId);
+        if (titleError) {
+          console.warn("[checkAndAwardBadges] active_title update failed:", titleError.message);
+        } else {
+          newTitle = titleString;
+        }
+      } else {
+        console.warn(`[checkAndAwardBadges] no REALM_TITLES entry for slug "${realm.slug}" — skipping title update`);
+      }
+    } else {
+      console.warn(`[checkAndAwardBadges] no realm found for realmId ${lastInserted.realm_id} — skipping title update`);
+    }
+  } catch (err) {
+    console.error("[checkAndAwardBadges] title auto-set threw unexpectedly:", err);
+  }
+
+  const badges = toInsert.map((r) => ({
     slug: r.badge_slug,
     name: REALM_BADGES[r.realm_id as RealmId].name,
     icon: REALM_BADGES[r.realm_id as RealmId].icon,
   }));
+
+  return { badges, newTitle };
 }
 
 /**

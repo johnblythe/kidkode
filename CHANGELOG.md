@@ -4,6 +4,27 @@ All notable changes to KidKode will be documented here.
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-04-07
+
+### Added
+- Avatar now shows kid's actual hero class emoji instead of hardcoded 🧙 (#37)
+- Avatar card gains tier-based border/glow styling — tier 1 (L1–4), tier 2 (L5–9, purple glow), tier 3 (L10+, gold glow) (#37)
+- Hero class evolves at L5 and L10 — evolved class name shown below hero name on dashboard (#37)
+- "EVOLVED!" card on UnlockScreen when lesson completion crosses a class evolution threshold (#37)
+- Realm titles earned on completing each of the 6 realms — shown as tappable badge on dashboard; tap cycles through earned titles (#37)
+- "NEW TITLE!" card on UnlockScreen when a realm badge is awarded (#37)
+- `active_title` column on `character_stats` (migration 007) — persists the kid's active title choice (#37)
+- `setActiveTitle` server action — validates against earned titles before persisting (#37)
+- `lib/classes.ts` — single source of truth for `CHARACTER_CLASSES`, `CLASS_EVOLUTIONS`, `REALM_TITLES`, and helpers (#37)
+
+### Changed
+- `PlayerProfile` — `heroClass` tightened from `string` to `HeroClass`; added `avatarTier`, `evolvedClassName`, `activeTitle`, `availableTitles` (#37)
+- `LessonCompletionResult` — added optional `classEvolved` and `newTitle` fields (#37)
+- `checkAndAwardBadges()` — now also auto-sets `active_title` on realm completion (non-fatal), returns `{ badges, newTitle }` (#37)
+- `completeLesson()` — detects class evolution threshold crossing (non-fatal); propagates `newTitle` from badge award (#37)
+- `UnlockScreen` — evolution and new-title cards added; delay sequence renumbered for all bonus cards (#37)
+- `app/onboard/page.tsx` and `app/parent/page.tsx` — now import `CHARACTER_CLASSES` from `lib/classes.ts` (#37)
+
 ## [1.2.0] - 2026-04-06
 
 ### Added

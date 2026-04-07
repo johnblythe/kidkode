@@ -19,6 +19,8 @@ interface UnlockScreenProps {
   newBadges?: { slug: string; name: string; icon: string }[];
   firstAttemptBonus?: { bonusXp: number };
   comebackBonus?: { daysAway: number; multiplier: number; bonusXp: number };
+  classEvolved?: { from: string; to: string };
+  newTitle?: string;
 }
 
 function XPCounter({ target, duration = 2000 }: { target: number; duration?: number }) {
@@ -43,17 +45,20 @@ function XPCounter({ target, duration = 2000 }: { target: number; duration?: num
   return <span>{count}</span>;
 }
 
-export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizScore, newBadges, firstAttemptBonus, comebackBonus }: UnlockScreenProps) {
+export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizScore, newBadges, firstAttemptBonus, comebackBonus, classEvolved, newTitle }: UnlockScreenProps) {
   const { sfx, playBGM } = useAudio();
   const reducedMotion = useReducedMotion();
   const [showContent, setShowContent] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showButton, setShowButton] = useState(false);
+  // Counter key for AnimatePresence — prevents stale boolean toggle when same screen fires back-to-back
+  const [statsKey, setStatsKey] = useState(0);
   const tier = getQuizTier(quizScore);
 
   useEffect(() => {
     sfx("unlock-celebration");
     playBGM("victory");
+    setStatsKey((k) => k + 1);
     const t1 = setTimeout(() => setShowContent(true), 300);
     const t2 = setTimeout(() => setShowStats(true), 1500);
     const t3 = setTimeout(() => setShowButton(true), 2800);
@@ -139,7 +144,8 @@ export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizSco
           )}
         </AnimatePresence>
 
-        <AnimatePresence>
+        {/* Stats cards — keyed counter prevents stale AnimatePresence on back-to-back completions */}
+        <AnimatePresence key={statsKey}>
           {showStats && (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -184,97 +190,141 @@ export default function UnlockScreen({ xpEarned, newLevel, streak, slug, quizSco
                 </div>
               </motion.div>
 
-              {/* Streak */}
-              {streak > 0 && (
+              {/* Class Evolved — slot after Level, before Streak */}
+              {classEvolved && (
                 <motion.div
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
                   transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
                   className="rpg-card px-6 py-4 flex items-center justify-between"
-                  style={{
-                    boxShadow: "0 0 12px rgba(239,68,68,0.15)",
-                  }}
-                >
-                  <span className="text-slate-400 text-sm uppercase tracking-wider">
-                    Streak
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="streak-fire text-2xl">&#128293;</span>
-                    <span className="text-fire-orange font-bold text-xl">{streak} day{streak > 1 ? "s" : ""}</span>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Score Tier */}
-              {tier && (
-                <motion.div
-                  initial={{ scale: 0.8 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 200, delay: 0.45 }}
-                  className="rpg-card px-6 py-4 flex items-center justify-between"
-                >
-                  <span className="text-slate-400 text-sm uppercase tracking-wider">Score Tier</span>
-                  <QuizTierBadge tier={tier} size="md" />
-                </motion.div>
-              )}
-
-              {/* First Try! bonus */}
-              {firstAttemptBonus && (
-                <motion.div
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 200, delay: 0.6 }}
-                  className="rpg-card px-6 py-4 flex items-center justify-between border-gold/60"
-                  style={{ boxShadow: "0 0 20px rgba(251,191,36,0.4)" }}
-                >
-                  <span className="text-gold text-sm uppercase tracking-wider font-bold">First Try!</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-black text-gold">+{firstAttemptBonus.bonusXp}</span>
-                    <span className="text-gold-dim text-sm">XP</span>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Welcome Back! comeback bonus */}
-              {comebackBonus && (
-                <motion.div
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", stiffness: 200, delay: firstAttemptBonus ? 0.75 : 0.6 }}
-                  className="rpg-card px-6 py-4 flex items-center justify-between"
-                  style={{ boxShadow: "0 0 20px rgba(249,115,22,0.35)", borderColor: "rgba(249,115,22,0.5)" }}
+                  style={{ boxShadow: "0 0 20px rgba(168,85,247,0.5)", borderColor: "rgba(168,85,247,0.6)" }}
                 >
                   <div className="flex flex-col">
-                    <span className="text-fire-orange text-sm uppercase tracking-wider font-bold">Welcome Back!</span>
-                    <span className="text-slate-500 text-xs">{comebackBonus.daysAway}d away → {comebackBonus.multiplier}x</span>
+                    <span className="text-xp-purple-bright text-sm uppercase tracking-wider font-bold">EVOLVED!</span>
+                    <span className="text-slate-400 text-xs">{classEvolved.from} → {classEvolved.to}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-2xl font-black text-fire-orange">+{comebackBonus.bonusXp}</span>
-                    <span className="text-fire-orange/60 text-sm">XP</span>
-                  </div>
+                  <span className="text-2xl">✨</span>
                 </motion.div>
               )}
 
-              {/* New Badges */}
-              {newBadges && newBadges.length > 0 && newBadges.map((badge, i) => {
-                const bonusCardCount = (firstAttemptBonus ? 1 : 0) + (comebackBonus ? 1 : 0);
+              {/* New Title — slot after Class Evolved */}
+              {newTitle && (
+                <motion.div
+                  initial={{ scale: 0.5, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 200, delay: classEvolved ? 0.45 : 0.3 }}
+                  className="rpg-card px-6 py-4 flex items-center justify-between"
+                  style={{ boxShadow: "0 0 20px rgba(251,191,36,0.35)", borderColor: "rgba(251,191,36,0.5)" }}
+                >
+                  <div className="flex flex-col">
+                    <span className="text-gold text-sm uppercase tracking-wider font-bold">NEW TITLE!</span>
+                    <span className="text-slate-400 text-xs">Now known as…</span>
+                  </div>
+                  <span className="text-gold font-bold text-sm">{newTitle}</span>
+                </motion.div>
+              )}
+
+              {/* Compute base delay offset for cards after the evolution slots */}
+              {(() => {
+                // Each extra card above (classEvolved, newTitle) shifts subsequent delays by 0.15
+                const evolutionOffset = (classEvolved ? 1 : 0) + (newTitle ? 1 : 0);
+
                 return (
-                  <motion.div
-                    key={badge.slug}
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", stiffness: 200, delay: 0.6 + bonusCardCount * 0.15 + i * 0.15 }}
-                    className="rpg-card px-6 py-4 flex items-center justify-between border-gold/40"
-                    style={{ boxShadow: "0 0 20px rgba(251,191,36,0.3)" }}
-                  >
-                    <span className="text-slate-400 text-sm uppercase tracking-wider">Realm Badge</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl">{badge.icon}</span>
-                      <span className="text-gold font-bold text-sm">{badge.name}</span>
-                    </div>
-                  </motion.div>
+                  <>
+                    {/* Streak */}
+                    {streak > 0 && (
+                      <motion.div
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 200, delay: 0.3 + evolutionOffset * 0.15 }}
+                        className="rpg-card px-6 py-4 flex items-center justify-between"
+                        style={{
+                          boxShadow: "0 0 12px rgba(239,68,68,0.15)",
+                        }}
+                      >
+                        <span className="text-slate-400 text-sm uppercase tracking-wider">
+                          Streak
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="streak-fire text-2xl">&#128293;</span>
+                          <span className="text-fire-orange font-bold text-xl">{streak} day{streak > 1 ? "s" : ""}</span>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Score Tier */}
+                    {tier && (
+                      <motion.div
+                        initial={{ scale: 0.8 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 200, delay: 0.45 + evolutionOffset * 0.15 }}
+                        className="rpg-card px-6 py-4 flex items-center justify-between"
+                      >
+                        <span className="text-slate-400 text-sm uppercase tracking-wider">Score Tier</span>
+                        <QuizTierBadge tier={tier} size="md" />
+                      </motion.div>
+                    )}
+
+                    {/* First Try! bonus */}
+                    {firstAttemptBonus && (
+                      <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 200, delay: 0.6 + evolutionOffset * 0.15 }}
+                        className="rpg-card px-6 py-4 flex items-center justify-between border-gold/60"
+                        style={{ boxShadow: "0 0 20px rgba(251,191,36,0.4)" }}
+                      >
+                        <span className="text-gold text-sm uppercase tracking-wider font-bold">First Try!</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-black text-gold">+{firstAttemptBonus.bonusXp}</span>
+                          <span className="text-gold-dim text-sm">XP</span>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Welcome Back! comeback bonus */}
+                    {comebackBonus && (
+                      <motion.div
+                        initial={{ scale: 0.5, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: "spring", stiffness: 200, delay: (firstAttemptBonus ? 0.75 : 0.6) + evolutionOffset * 0.15 }}
+                        className="rpg-card px-6 py-4 flex items-center justify-between"
+                        style={{ boxShadow: "0 0 20px rgba(249,115,22,0.35)", borderColor: "rgba(249,115,22,0.5)" }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-fire-orange text-sm uppercase tracking-wider font-bold">Welcome Back!</span>
+                          <span className="text-slate-500 text-xs">{comebackBonus.daysAway}d away → {comebackBonus.multiplier}x</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-2xl font-black text-fire-orange">+{comebackBonus.bonusXp}</span>
+                          <span className="text-fire-orange/60 text-sm">XP</span>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* New Badges */}
+                    {newBadges && newBadges.length > 0 && newBadges.map((badge, i) => {
+                      const bonusCardCount = (firstAttemptBonus ? 1 : 0) + (comebackBonus ? 1 : 0) + evolutionOffset;
+                      return (
+                        <motion.div
+                          key={badge.slug}
+                          initial={{ scale: 0.5, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 200, delay: 0.6 + bonusCardCount * 0.15 + i * 0.15 }}
+                          className="rpg-card px-6 py-4 flex items-center justify-between border-gold/40"
+                          style={{ boxShadow: "0 0 20px rgba(251,191,36,0.3)" }}
+                        >
+                          <span className="text-slate-400 text-sm uppercase tracking-wider">Realm Badge</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">{badge.icon}</span>
+                            <span className="text-gold font-bold text-sm">{badge.name}</span>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </>
                 );
-              })}
+              })()}
             </motion.div>
           )}
         </AnimatePresence>

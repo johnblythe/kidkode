@@ -12,6 +12,9 @@ import type {
   HeroClass,
 } from "@/lib/types";
 import { lessons } from "@/content/lessons";
+import { getAvatarTier, getEvolvedClassName, getAvailableTitles } from "@/lib/classes";
+
+const KNOWN_HERO_CLASSES: HeroClass[] = ["wizard", "knight", "elf", "ninja", "hero", "merfolk"];
 
 // ============================================================
 // lookupUser — email → profile (discriminated union return)
@@ -199,20 +202,29 @@ export async function listChildren(parentId: string): Promise<PlayerProfile[]> {
     const completed = lessonRows.filter((r) => r.status === "completed").length;
     const levelInfo = calculateLevel(totalXp);
 
+    const heroClass = (KNOWN_HERO_CLASSES.includes(child.hero_class as HeroClass)
+      ? child.hero_class
+      : "wizard") as HeroClass;
+    const level = stats?.current_level ?? 1;
+    const badges = badgesByChild.get(child.id) ?? [];
     return {
       id: child.id,
       email: child.email,
       name: child.hero_name,
-      heroClass: child.hero_class,
+      heroClass,
       role: "child" as const,
-      level: stats?.current_level ?? 1,
+      level,
       xp: levelInfo.xp,
       xpToNextLevel: levelInfo.xpToNextLevel,
       streak: stats?.streak_days ?? 0,
       totalLessonsCompleted: completed,
       unlockedToday: false,
       lessons: lessonsMap,
-      badges: badgesByChild.get(child.id) ?? [],
+      badges,
+      avatarTier: getAvatarTier(level),
+      evolvedClassName: getEvolvedClassName(heroClass, level),
+      activeTitle: null,
+      availableTitles: getAvailableTitles(badges),
     };
   });
 }
